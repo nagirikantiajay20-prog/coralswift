@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/manrope';
+
+/* Design tokens: palette from PRD section 4 ("proposed digital tokens", pending brand approval). */
+@theme {
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+  --font-heading: 'Manrope Variable', system-ui, sans-serif;
+
+  --color-coral: #f98f33;
+  --color-coral-bright: #f05e47;
+  --color-rose: #e73b50;
+  --color-magenta: #d21d61;
+  --color-purple: #950b6d;
+  --color-navy: #080b2e;
+  --color-navy-soft: #25294d;
+  --color-surface: #f5f6fa;
+  --color-warm: #fff7f2;
+  /* Derived darker coral so coral text/links reach WCAG AA on white (not an approved brand token). */
+  --color-coral-ink: #c4301c;
+  --color-line: #e3e5ee;
+  --color-muted: #5b607f;
+}
+
+@layer base {
+  body {
+    @apply bg-surface font-sans text-navy antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-coral-ink;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
