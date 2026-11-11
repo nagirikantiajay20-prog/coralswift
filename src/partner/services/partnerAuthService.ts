@@ -17,9 +17,9 @@ export class NotAPartnerAccountError extends Error {
  * generic 401 for unknown, locked, inactive or not-yet-activated accounts.
  */
 export const partnerAuthService = {
-  /** GET /auth/me; accepts only user_type=partner with an organization, else signs out. */
-  async loadSession(): Promise<PartnerUser> {
-    const me = (await api.get<ApiEnvelope<MeOut>>(endpoints.auth.me)).data.data
+  /** Accepts only user_type=partner with an organization (from /auth/me), else signs out. */
+  async loadSession(meIn?: MeOut): Promise<PartnerUser> {
+    const me = meIn ?? (await api.get<ApiEnvelope<MeOut>>(endpoints.auth.me)).data.data
     if (me.user_type !== 'partner' || !me.organization) {
       await authService.signOut()
       throw new NotAPartnerAccountError()

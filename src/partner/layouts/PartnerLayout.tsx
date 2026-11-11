@@ -1,8 +1,8 @@
 import { Bell, LogOut, Menu, UserRound } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { authService } from '@/features/auth/services/authService'
+import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useLogout } from '@/features/auth/hooks/useLogout'
 import { useAuthStore } from '@/store/authStore'
 import logo from '@/assets/coralswift-logo.png'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
@@ -52,11 +52,7 @@ export function PartnerLayout() {
     refetchInterval: 60_000,
     retry: false,
   })
-  const navigate = useNavigate()
-  const logout = async () => {
-    await authService.signOut() // revokes the server session; local state cleared regardless
-    navigate(PARTNER_ROUTES.login, { replace: true })
-  }
+  const logout = useLogout()
   return (
     <div className="min-h-screen">
       <a

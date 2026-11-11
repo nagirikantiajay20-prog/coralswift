@@ -33,7 +33,7 @@ export default function PartnerActivatePage() {
           to={PARTNER_ROUTES.login}
           className="mt-4 inline-block text-sm text-coral-ink hover:underline"
         >
-          Partner sign in
+          Sign in
         </Link>
       </>
     )

@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/services/api/client'
 import { useAuthStore } from '@/store/authStore'
-import { PartnerRoute } from '../components/PartnerRoute'
+import { ProtectedRoute } from '@/features/auth/components/guards'
 import PartnerDashboardPage from './PartnerDashboardPage'
 
 // Test doubles only; the page never ships sample data.
@@ -85,8 +85,8 @@ const renderAt = (path = '/partner/dashboard') =>
     >
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/partner/login" element={<p>partner login</p>} />
-          <Route element={<PartnerRoute />}>
+          <Route path="/login" element={<p>partner login</p>} />
+          <Route element={<ProtectedRoute kind="partner" />}>
             <Route path="/partner/dashboard" element={<PartnerDashboardPage />} />
           </Route>
         </Routes>

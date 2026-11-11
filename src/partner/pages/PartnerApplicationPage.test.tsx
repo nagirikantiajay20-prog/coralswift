@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/services/api/client'
 import { useAuthStore } from '@/store/authStore'
-import { PartnerRoute } from '../components/PartnerRoute'
+import { ProtectedRoute } from '@/features/auth/components/guards'
 import type { HistoryItem, PartnerApplication } from '../services/partnerDashboardService'
 import { buildTracker, decisionOf, infoRequests, lifecycle } from '../utils/applicationStatus'
 import PartnerApplicationPage from './PartnerApplicationPage'
@@ -159,8 +159,8 @@ const renderPage = () =>
     >
       <MemoryRouter initialEntries={['/partner/application']}>
         <Routes>
-          <Route path="/partner/login" element={<p>partner login</p>} />
-          <Route element={<PartnerRoute />}>
+          <Route path="/login" element={<p>partner login</p>} />
+          <Route element={<ProtectedRoute kind="partner" />}>
             <Route path="/partner/application" element={<PartnerApplicationPage />} />
           </Route>
         </Routes>
@@ -261,7 +261,9 @@ describe('PartnerApplicationPage', () => {
     const post = vi.spyOn(api, 'post').mockRejectedValue(new Error('already exists'))
     renderPage()
     await screen.findByRole('button', { name: 'Create draft application' })
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'direct_project_engagement' } })
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: { value: 'direct_project_engagement' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Create draft application' }))
     await waitFor(() =>
       expect(post).toHaveBeenCalledWith('/api/v1/partner/applications', {

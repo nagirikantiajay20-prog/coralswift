@@ -35,10 +35,7 @@ describe('partner activation', () => {
     expect(await screen.findByText(/account is active/i)).toBeInTheDocument()
     expect(post).toHaveBeenCalledTimes(1)
     expect(post.mock.calls[0][1]).toEqual({ token: 'abcdefghijk', password: 'Str0ng-pass!' })
-    expect(screen.getByRole('link', { name: 'Partner sign in' })).toHaveAttribute(
-      'href',
-      '/partner/login',
-    )
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
   })
   it('blocks submit without a token', () => {
     const post = vi.spyOn(api, 'post')

@@ -1,7 +1,8 @@
 /** Partner Portal route namespace. Kept separate from ROUTES (admin/staff) on purpose. */
 export const PARTNER_ROUTES = {
   root: '/partner',
-  login: '/partner/login',
+  /** Retired: the single login lives at ROUTES.login. `/partner/login` is only a redirect. */
+  login: '/login',
   forgotPassword: '/partner/forgot-password',
   resetPassword: '/partner/reset-password',
   activate: '/partner/activate',

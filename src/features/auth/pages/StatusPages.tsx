@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/config/routes'
+import { useAuth } from '../hooks/useAuth'
 
 function Notice({
   title,
@@ -26,12 +27,17 @@ function Notice({
   )
 }
 
+/** "Back" target and label follow the session: dashboard of its own portal, or sign in. */
+function useBack() {
+  const { kind, home } = useAuth()
+  return { to: home, cta: kind ? 'Back to dashboard' : 'Sign in' }
+}
+
 export const UnauthorizedPage = () => (
   <Notice
     title="Access denied"
     text="Your role does not have access to this area."
-    to={ROUTES.dashboard}
-    cta="Back to dashboard"
+    {...useBack()}
   />
 )
 export const SessionExpiredPage = () => (
@@ -43,10 +49,5 @@ export const SessionExpiredPage = () => (
   />
 )
 export const NotFoundPage = () => (
-  <Notice
-    title="Page not found"
-    text="The page you requested does not exist."
-    to={ROUTES.dashboard}
-    cta="Back to dashboard"
-  />
+  <Notice title="Page not found" text="The page you requested does not exist." {...useBack()} />
 )

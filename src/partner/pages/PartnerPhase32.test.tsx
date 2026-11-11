@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/services/api/client'
 import { useAuthStore } from '@/store/authStore'
-import { PartnerRoute } from '../components/PartnerRoute'
+import { ProtectedRoute } from '@/features/auth/components/guards'
 import { PARTNER_NAVIGATION } from '../config/navigation'
 import PartnerFollowUpsPage from './PartnerFollowUpsPage'
 import PartnerMeetingsPage from './PartnerMeetingsPage'
@@ -42,8 +42,8 @@ const renderAt = (path: string) =>
     >
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/partner/login" element={<p>partner login</p>} />
-          <Route element={<PartnerRoute />}>
+          <Route path="/login" element={<p>partner login</p>} />
+          <Route element={<ProtectedRoute kind="partner" />}>
             <Route path="/partner/follow-ups" element={<PartnerFollowUpsPage />} />
             <Route path="/partner/meetings" element={<PartnerMeetingsPage />} />
           </Route>

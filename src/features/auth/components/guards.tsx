@@ -3,16 +3,23 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import type { ModuleKey } from '@/config/permissions'
 import { ROUTES } from '@/config/routes'
 import { useAuthStore } from '@/store/authStore'
+import type { SessionKind } from '@/types/auth'
 import { useAuth } from '../hooks/useAuth'
 
-/** Requires an authenticated session. UI gating only; the backend authorizes every request. */
-export function ProtectedRoute() {
-  const user = useAuthStore((s) => s.user)
+/**
+ * Requires a session of `kind`. UI gating only; the backend authorizes every request.
+ * - matching session -> render
+ * - other portal's session -> that session's own home (no loop: home passes its own guard)
+ * - none -> the single login, remembering the deep link (or the session-expired notice)
+ */
+export function ProtectedRoute({ kind = 'staff' }: { kind?: SessionKind }) {
   const expired = useAuthStore((s) => s.sessionExpired)
   const restoring = useAuthStore((s) => s.restoring)
+  const { kind: actual, home } = useAuth()
   const location = useLocation()
   if (restoring) return null
-  if (user) return <Outlet />
+  if (actual === kind) return <Outlet />
+  if (actual) return <Navigate to={home} replace />
   return (
     <Navigate
       to={expired ? ROUTES.sessionExpired : ROUTES.login}
@@ -20,6 +27,13 @@ export function ProtectedRoute() {
       replace
     />
   )
+}
+
+/** "/" : send each visitor to where their session belongs (login when signed out). */
+export function HomeRedirect() {
+  const restoring = useAuthStore((s) => s.restoring)
+  const { home } = useAuth()
+  return restoring ? null : <Navigate to={home} replace />
 }
 
 /** Route-level permission check for a module. */

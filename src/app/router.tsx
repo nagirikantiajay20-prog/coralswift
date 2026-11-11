@@ -9,7 +9,7 @@ import {
 import { LoadingState } from '@/components/common/states'
 import type { ModuleKey } from '@/config/permissions'
 import { ROUTES } from '@/config/routes'
-import { ModuleRoute, ProtectedRoute } from '@/features/auth/components/guards'
+import { HomeRedirect, ModuleRoute, ProtectedRoute } from '@/features/auth/components/guards'
 import ChangePasswordPage from '@/features/auth/pages/ChangePasswordPage'
 import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage'
 import LoginPage from '@/features/auth/pages/LoginPage'
@@ -137,7 +137,7 @@ const contentRoutes: RouteObject[] = [
 ]
 
 export const router = createBrowserRouter([
-  { path: '/', element: <Navigate to={ROUTES.dashboard} replace /> },
+  { path: '/', element: <HomeRedirect /> },
   {
     element: <AuthLayout />,
     children: [

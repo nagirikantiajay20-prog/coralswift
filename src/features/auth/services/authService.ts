@@ -5,7 +5,7 @@ import { partnerAuthService } from '@/partner/services/partnerAuthService'
 import { api, requireEndpoint } from '@/services/api/client'
 import { storedRefreshToken, useAuthStore } from '@/store/authStore'
 import { ownedByAnotherLiveTab } from '@/store/tabOwner'
-import type { SessionUser } from '@/types/auth'
+import type { SessionKind, SessionUser } from '@/types/auth'
 import type { ChangePasswordValues } from '../schemas'
 import type { ApiEnvelope, MeOut, MfaEnrollOut, PermissionsOut, TokenOut } from '../types'
 
@@ -34,9 +34,23 @@ export const authService = {
     return step
   },
 
-  /** GET /auth/me, then publish the session user. Rejects partner / role-less accounts. */
-  async loadSession(): Promise<SessionUser> {
-    const me = data(await api.get<ApiEnvelope<MeOut>>(e.me))
+  /**
+   * GET /auth/me once and publish whichever session the backend says this is (staff or partner).
+   * The caller never chooses the portal: user_type / staff_role from the server decide.
+   */
+  async completeSession(me?: MeOut): Promise<SessionKind> {
+    const m = me ?? data(await api.get<ApiEnvelope<MeOut>>(e.me))
+    if (m.user_type === 'partner') {
+      await partnerAuthService.loadSession(m)
+      return 'partner'
+    }
+    await authService.loadSession(m)
+    return 'staff'
+  },
+
+  /** Publishes the staff session from /auth/me. Rejects partner / role-less (unknown role) accounts. */
+  async loadSession(meIn?: MeOut): Promise<SessionUser> {
+    const me = meIn ?? data(await api.get<ApiEnvelope<MeOut>>(e.me))
     const role =
       me.user_type === 'staff' && me.staff_role ? STAFF_ROLE_TO_ROLE[me.staff_role] : undefined
     if (!role) {
@@ -51,7 +65,10 @@ export const authService = {
   },
 
   /** GET /auth/permissions. Any failure or empty answer returns null so the role hint applies. */
-  async loadPermissions(): Promise<{ paths: string[] | null; matrix: Record<string, string[]> | null }> {
+  async loadPermissions(): Promise<{
+    paths: string[] | null
+    matrix: Record<string, string[]> | null
+  }> {
     try {
       const d = data(await api.get<ApiEnvelope<PermissionsOut>>(e.permissions))
       const paths = (d?.modules ?? [])
@@ -108,10 +125,7 @@ export const authService = {
         }
         st.setTokens('', rt) // lets refresh() read the token; replaced on success
         if (!(await authService.refresh())) throw new Error('refresh failed')
-        const me = data(await api.get<ApiEnvelope<MeOut>>(e.me))
-        if (me.user_type === 'partner')
-          await partnerAuthService.loadSession() // cycle is safe: only used at call time
-        else await authService.loadSession()
+        await authService.completeSession() // cycle with partnerAuthService is safe: call time only
       } catch (e) {
         // Offline / server trouble: stay signed out for now but keep the stored token for the next load.
         if (!isTransient(e)) useAuthStore.getState().clear()

@@ -13,17 +13,13 @@ import {
 import { ROLES } from '@/config/permissions'
 import { ROUTES } from '@/config/routes'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { authService } from '@/features/auth/services/authService'
+import { useLogout } from '@/features/auth/hooks/useLogout'
 
 export function UserMenu() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const logout = useLogout()
   if (!user) return null
-
-  const logout = async () => {
-    await authService.signOut() // revokes the server session; local state cleared regardless
-    navigate(ROUTES.login, { replace: true })
-  }
 
   return (
     <DropdownMenu>

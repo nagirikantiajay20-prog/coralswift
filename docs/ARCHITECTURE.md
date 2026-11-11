@@ -106,3 +106,21 @@ No new API client code: `features/follow-ups` holds pure helpers (`followUpState
 
 
 > **Phase 37:** live backend is now 134 paths; staff `POST /auth/change-password` is wired (`config/endpoints.ts`, `authService.changePassword`). See `BACKEND_DEPENDENCY_REGISTER.md` Part C for other newly available endpoints not yet consumed.
+
+## Unified login and role-based routing (current)
+
+**One login at `/login`** (`features/auth/pages/LoginPage.tsx`) for staff and partners. The user never selects a portal or role. Flow: `POST /auth/login` -> MFA verify/enroll if the backend asks -> `authService.completeSession()` does one `GET /auth/me` and branches on `user_type` (`partner` -> `partnerAuthService.loadSession`, else `authService.loadSession`, which maps `staff_role` through `STAFF_ROLE_TO_ROLE`). An unmapped role or a partner without an organization is signed out and rejected. The backend remains the authority: the client role/permission data only gates the UI.
+
+| Backend identity | Destination |
+|---|---|
+| staff: super_administrator, business_development_manager, partner_reviewer, content_administrator | `/admin/dashboard` |
+| partner (with organization) | `/partner/dashboard` |
+| anything else | signed out, error shown |
+
+**Guards** (`features/auth/components/guards.tsx`): `ProtectedRoute kind="staff"|"partner"` is the only session guard. Matching session renders; the other portal's session is sent to its own home (no loop); no session goes to `/login` with `state.from` (or `/session-expired` after expiry). `ModuleRoute` keeps module permissions for `/admin`. `HomeRedirect` handles `/`. Deep links are honoured only by `resolveDestination` (`features/auth/utils/destination.ts`): in-portal paths of the session's own kind, never auth pages, never external or `//` URLs.
+
+**Shared:** `MfaSteps.tsx` (MFA verify/enroll, used by login and Partner Security), `PasswordInput` (`components/forms/inputs.tsx`), `useLogout`, `useAuth().kind/home`. Forgot/reset-password pages are shared; `/partner/forgot-password`, `/partner/reset-password` and `/partner/activate` remain because emailed links may target them. `/partner/login` is a redirect to `/login`.
+
+**Removed:** `PartnerLoginPage`, `PartnerRoute`, `partner/utils/destination.ts`, the `loginRoute` prop, and the duplicate password-toggle markup.
+
+**Not in this repo:** the Public Portal. Its header should link to `/login`; nothing here forces public visitors to authenticate.

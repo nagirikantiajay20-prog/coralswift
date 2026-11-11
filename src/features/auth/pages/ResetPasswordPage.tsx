@@ -10,7 +10,7 @@ import { toAppError } from '@/services/api/errors'
 import { resetPasswordSchema, type ResetPasswordValues } from '../schemas'
 import { authService } from '../services/authService'
 
-export default function ResetPasswordPage({ loginRoute = ROUTES.login }: { loginRoute?: string }) {
+export default function ResetPasswordPage() {
   // ponytail: reset token read from `?token=`; the emailed link format is not in the backend spec.
   const token = useSearchParams()[0].get('token') ?? ''
   const form = useForm<ResetPasswordValues>({ resolver: zodResolver(resetPasswordSchema) })
@@ -21,7 +21,10 @@ export default function ResetPasswordPage({ loginRoute = ROUTES.login }: { login
     return (
       <>
         <p role="status">Your password has been reset.</p>
-        <Link to={loginRoute} className="mt-4 inline-block text-sm text-coral-ink hover:underline">
+        <Link
+          to={ROUTES.login}
+          className="mt-4 inline-block text-sm text-coral-ink hover:underline"
+        >
           Sign in
         </Link>
       </>

@@ -3,7 +3,7 @@ import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage'
 import ResetPasswordPage from '@/features/auth/pages/ResetPasswordPage'
 import { NotFoundPage } from '@/features/auth/pages/StatusPages'
 import { AuthLayout } from '@/layouts/AuthLayout'
-import { PartnerRoute } from './components/PartnerRoute'
+import { ProtectedRoute } from '@/features/auth/components/guards'
 import { PARTNER_ROUTES as R } from './config/routes'
 import { PartnerLayout } from './layouts/PartnerLayout'
 import PartnerApplicationPage from './pages/PartnerApplicationPage'
@@ -13,7 +13,6 @@ import PartnerProfileChangesPage from './pages/PartnerProfileChangesPage'
 import PartnerDocumentsPage from './pages/PartnerDocumentsPage'
 import PartnerDashboardPage from './pages/PartnerDashboardPage'
 import PartnerActivatePage from './pages/PartnerActivatePage'
-import PartnerLoginPage from './pages/PartnerLoginPage'
 import PartnerProjectsPage from './pages/PartnerProjectsPage'
 import PartnerPerformancePage from './pages/PartnerPerformancePage'
 import PartnerMessagesPage from './pages/PartnerMessagesPage'
@@ -36,14 +35,14 @@ export const partnerRoutes: RouteObject = {
     {
       element: <AuthLayout />,
       children: [
-        { path: 'login', element: <PartnerLoginPage /> },
-        { path: 'forgot-password', element: <ForgotPasswordPage loginRoute={R.login} /> },
-        { path: 'reset-password', element: <ResetPasswordPage loginRoute={R.login} /> },
+        { path: 'login', element: <Navigate to={R.login} replace /> }, // legacy bookmarks
+        { path: 'forgot-password', element: <ForgotPasswordPage /> },
+        { path: 'reset-password', element: <ResetPasswordPage /> },
         { path: 'activate', element: <PartnerActivatePage /> },
       ],
     },
     {
-      element: <PartnerRoute />,
+      element: <ProtectedRoute kind="partner" />,
       children: [
         {
           element: <PartnerLayout />,

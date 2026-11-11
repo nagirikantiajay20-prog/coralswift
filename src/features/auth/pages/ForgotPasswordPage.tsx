@@ -10,7 +10,7 @@ import { toAppError } from '@/services/api/errors'
 import { forgotPasswordSchema, type ForgotPasswordValues } from '../schemas'
 import { authService } from '../services/authService'
 
-export default function ForgotPasswordPage({ loginRoute = ROUTES.login }: { loginRoute?: string }) {
+export default function ForgotPasswordPage() {
   const form = useForm<ForgotPasswordValues>({ resolver: zodResolver(forgotPasswordSchema) })
   const m = useMutation({ mutationFn: authService.forgotPassword })
 
@@ -40,7 +40,7 @@ export default function ForgotPasswordPage({ loginRoute = ROUTES.login }: { logi
           </Button>
         </form>
       )}
-      <Link to={loginRoute} className="mt-4 inline-block text-sm text-coral-ink hover:underline">
+      <Link to={ROUTES.login} className="mt-4 inline-block text-sm text-coral-ink hover:underline">
         Back to sign in
       </Link>
     </>
