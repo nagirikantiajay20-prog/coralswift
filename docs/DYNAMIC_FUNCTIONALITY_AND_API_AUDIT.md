@@ -9,7 +9,7 @@ Companion files: [API_ENDPOINT_COVERAGE_MATRIX.md](API_ENDPOINT_COVERAGE_MATRIX.
 | Level | What it means here | Result |
 |---|---|---|
 | **1. Source-code verified** | Read the route, page, hook, service and HTTP call, and confirmed the response feeds the UI | All 115 features and 183 operations |
-| **2. Automated-test verified** | Vitest suite; the API client is mocked in these tests | 54 files / 328 tests pass. This is **not** live-backend evidence |
+| **2. Automated-test verified** | Vitest suite; the API client is mocked in these tests | 62 files / 378 tests pass. This is **not** live-backend evidence |
 | **3. Staging / runtime verified** | Real authenticated calls against the backend | **None.** No staging credentials were available. Only unauthenticated probes were made (see §10) |
 
 Every cross-portal workflow is therefore **NOT RUNTIME VERIFIED**.
@@ -17,11 +17,11 @@ Every cross-portal workflow is therefore **NOT RUNTIME VERIFIED**.
 ## 1. Executive summary
 
 - The application is **genuinely dynamic**. A scan of all non-test source found no mock services, no fake JSON responses, no local-only CRUD, no fabricated success messages and no hardcoded dashboard statistics or chart datasets. Every data page reads from the shared Axios client (`src/services/api/client.ts`) and every mutation sends a real request and invalidates its queries.
-- **Features (115):** 91 Fully Dynamic (79.1%), 10 Partially Dynamic (8.7%), 0 Static/Hardcoded, 0 Mocked/Simulated, 4 Not Implemented (3.5%), 10 Backend Blocked (8.7%).
+- **Features (115):** 101 Fully Dynamic (87.8%), 4 Partially Dynamic (3.5%), 0 Static/Hardcoded, 0 Mocked/Simulated, 0 Not Implemented, 10 Backend Blocked (8.7%).
 - **API operations (183):** 150 fully integrated (82.0%); 6 partial; 3 present but unused; 2 missing frontend integration; 18 intentionally unused (public website endpoints plus one partner detail endpoint); 4 not applicable (health/meta). Against the 161 console-relevant operations, 93.2% are fully integrated.
 - **Most important gap:** the Partner Portal cannot **create** an application. `POST /partner/applications` is never called, and the Application page only says "When your partner application is created it will appear here". Unless the backend auto-creates a draft on activation (not verified), step 4 of the cross-portal workflow cannot be done from the UI.
 - Second gap: the Partner **Enquiries** route is still a "Scaffold only" placeholder even though `GET /partner/enquiries` exists.
-- Quality gates are green: `tsc -b`, ESLint, 328 unit tests and the production build all pass.
+- Quality gates are green: `tsc -b`, ESLint, 378 unit tests and the production build all pass.
 - Several comments and docs are stale (see §11). The live OpenAPI (183 operations) is much larger than the "115 paths" some comments cite.
 
 ## 2. Application and module inventory

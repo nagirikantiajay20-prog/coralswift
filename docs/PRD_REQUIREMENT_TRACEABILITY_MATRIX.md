@@ -1,5 +1,7 @@
 # PRD Requirement Traceability Matrix – Phase 37
 
+> **Historical snapshot.** Figures here predate later passes (now 162 paths / 183 operations, 62 test files / 378 tests). Current verified numbers: `STAGE1_03_VERIFIED_METRICS.md`.
+
 Source: `Coral_Swift_Complete_Consolidated_Master_PRD.pdf` (pages 1–14 "Version 2.0" + gap-closure pages "Version 3.0"; 30 sections). Audit date 2026-11-10.
 Code audited: this repository (Admin Console `src/features`, Partner Portal `src/partner`). Live backend: `https://coralswift-backend.onrender.com` (OpenAPI re-fetched today: **134 paths**, 19 more than the Phase 36 snapshot).
 

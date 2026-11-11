@@ -2,7 +2,7 @@
 
 ## Hosting platform: not determined
 
-Nothing in the repository identifies the host. There is no `render.yaml`, `netlify.toml`, `vercel.json` or CI workflow. `public/_redirects` is Netlify / Cloudflare Pages syntax, and the README says Render Static Sites need a manual rewrite instead. **No host config file has been added to the repo.** Pick the block below that matches the real host, replace `API_ORIGIN` with the exact backend origin (currently `https://coralswift-backend.onrender.com`), and deploy it to staging first.
+The repository now has a `render.yaml` Blueprint (Render static site) carrying these headers; no `netlify.toml`, `vercel.json` or CI workflow exists. `public/_redirects` is Netlify / Cloudflare Pages syntax, and the README says Render Static Sites need a manual rewrite instead. **No host config file has been added to the repo.** Pick the block below that matches the real host, replace `API_ORIGIN` with the exact backend origin (currently `https://coralswift-backend.onrender.com`), and deploy it to staging first.
 
 ## Recommended policy
 

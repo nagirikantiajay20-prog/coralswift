@@ -1,5 +1,7 @@
 # Backend Dependency Register – Phase 37 (2026-11-10)
 
+> **Historical snapshot.** Figures here predate later passes (now 162 paths / 183 operations, 62 test files / 378 tests). Current verified numbers: `STAGE1_03_VERIFIED_METRICS.md`.
+
 Basis: live `https://coralswift-backend.onrender.com/openapi.json` re-fetched during this audit (**134 paths**), compared with the Phase 36 snapshot (115 paths) and with `src/config/endpoints.ts`, `src/partner/config/endpoints.ts`. Only gaps confirmed against the live spec or by unauthenticated live probe are listed. Detailed per-module history stays in `BACKEND_GAPS.md` (written before the 19 new paths; its items X5, X8, X11 and several module items are now **stale** – see Part C).
 
 Priority: **P1** blocks a PRD must/critical requirement or is a security exposure · **P2** blocks significant PRD functionality · **P3** limits quality/reporting.

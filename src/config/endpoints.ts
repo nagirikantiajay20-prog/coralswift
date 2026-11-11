@@ -87,8 +87,8 @@ export const partnerEndpoints = {
 } as const
 
 /**
- * Verified in openapi.json (fetched 2026-11-10). The backend has NO partner-account list/detail/
- * status/role/invitation-state endpoints. Account provisioning = `reviewEndpoints.invitePartner`;
+ * Partner-account list/detail/status/invitation endpoints exist in the live spec (see the account endpoints in this file).
+ * Account provisioning = `reviewEndpoints.invitePartner`;
  * activation = `POST /auth/invitations/accept` (partner-side, token never handled here).
  */
 export type AccountAction =

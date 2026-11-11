@@ -366,7 +366,7 @@ Nothing in 5 should start before its decision is recorded.
 ## 13. Final approval checklist
 
 - [x] BD-9: PRD version confirmed in chat on 2026-11-11: **3.0 binding** (§28–§30 are mandatory). Consequence: A-19, A-20, A-21 and all §28 items are mandatory; A-19 now waits only on BD-1 (which pathway each threshold applies to)
-- [ ] Confirmed that the PRD is approved (cover still says Draft)
+- [x] PRD approved: confirmed by the product owner in chat on 2026-11-11 (the document cover still says Draft; no signed record exists in the file)
 - [ ] Reclassification of P-04, A-22 accepted
 - [ ] A-19 decision: build (3.0 + BD-1) or defer
 - [ ] BD-8: definition of "communication history" supplied

@@ -1,5 +1,7 @@
 # Cross-Portal Integration Report – Phase 36 (2026-11-10)
 
+> **Historical snapshot.** Figures here predate later passes (now 162 paths / 183 operations, 62 test files / 378 tests). Current verified numbers: `STAGE1_03_VERIFIED_METRICS.md`.
+
 Legend: **Implemented** = code exists · **Tested** = automated tests (mocked API) pass · **Live-verified** = exercised against `https://coralswift-backend.onrender.com` with real credentials. Nothing below is marked live-verified unless stated.
 
 ## 1. Scope reality check

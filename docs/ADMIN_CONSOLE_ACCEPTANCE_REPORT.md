@@ -1,5 +1,7 @@
 # Admin Console – Acceptance Report (Phase 21)
 
+> **Historical snapshot.** Figures here predate later passes (now 162 paths / 183 operations, 62 test files / 378 tests). Current verified numbers: `STAGE1_03_VERIFIED_METRICS.md`.
+
 Date: 2026-11-10 · Scope: Admin Console only · PRD: `Coral_Swift_Complete_Consolidated_Master_PRD.pdf` (found at `C:\Users\DELL\Downloads\`).
 
 ## 1. Verification levels
