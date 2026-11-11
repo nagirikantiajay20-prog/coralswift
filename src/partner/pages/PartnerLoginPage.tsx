@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { devLogin } from '@/config/env'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { FormField } from '@/components/forms/FormField'
 import { Button } from '@/components/ui/button'
@@ -25,7 +26,10 @@ export default function PartnerLoginPage() {
   const signedIn = useAuthStore((s) => !!s.partner)
   const [show, setShow] = useState(false)
   const [loadError, setLoadError] = useState<unknown>(null)
-  const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema) })
+  const form = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: devLogin('PARTNER'),
+  })
   const { errors } = form.formState
 
   /** After each stage: load the session unless an MFA step is still pending. */

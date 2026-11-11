@@ -38,13 +38,13 @@ export const CAPABILITIES: Capability[] = [
     operation: 'Account details, last login',
     support: 'verified',
     detail:
-      'Status, invitation state, MFA and last login come from the account list. A detail endpoint exists but is not wired. Partner roles are not defined.',
+      'Status, invitation state, invitation email delivery, MFA and last login come from the account list (the per-account detail endpoint returns no extra fields used here). Partner roles are not defined.',
   },
   {
     operation: 'Invitation status (read)',
     support: 'verified',
     detail:
-      'invitation_state in the account list. Resend/revoke endpoints exist in the backend but are not wired in this console yet.',
+      'invitation_state (account lifecycle) and invitation_delivery_status / invitation_delivery_at (email delivery only) from the account list. Resend and revoke are available from the directory.',
   },
   {
     operation: 'Account suspend / reactivate / resend / revoke',
@@ -89,6 +89,13 @@ const ACTIONS: Record<AccountAction, AccountActionDef> = {
     description: 'The partner user is signed out everywhere and cannot sign in until reactivated.',
     destructive: true,
   },
+  'password-reset': {
+    action: 'password-reset',
+    label: 'Send password reset',
+    title: 'Email a password-reset link?',
+    description:
+      'A reset link is emailed to the account holder. Administrators never see or set passwords.',
+  },
   reactivate: {
     action: 'reactivate',
     label: 'Reactivate',
@@ -104,7 +111,7 @@ export const actionsFor = (a: { status: string; invitation_state: string }): Acc
     return a.invitation_state === 'revoked' || a.invitation_state === 'expired'
       ? [ACTIONS['invitation/resend']]
       : [ACTIONS['invitation/resend'], ACTIONS['invitation/revoke']]
-  if (a.status === 'active') return [ACTIONS.suspend]
+  if (a.status === 'active') return [ACTIONS['password-reset'], ACTIONS.suspend]
   if (a.status === 'deactivated') return [ACTIONS.reactivate]
   return []
 }

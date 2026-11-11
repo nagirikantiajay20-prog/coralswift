@@ -24,6 +24,7 @@ import {
 } from '@/features/partner-applications/pages/ApplicationDetailPage'
 import { formatDateTime, humanize, shortId } from '@/features/partner-applications/utils/format'
 import { toAppError } from '@/services/api/errors'
+import { DocumentRequests } from '../components/DocumentRequests'
 import { buildChecklist, checklistProgress, decisionsFrom } from '../utils/derive'
 
 const TABS = [
@@ -78,7 +79,7 @@ export default function ApplicationReviewWorkspacePage() {
   const notes = useNotes(id)
   const messages = useMessages(id)
   const audit = useAudit(id)
-  const reviewers = useReviewers(user?.role === 'super_administrator')
+  const reviewers = useReviewers(true)
 
   const back = (
     <Button asChild variant="secondary">
@@ -234,9 +235,14 @@ export default function ApplicationReviewWorkspacePage() {
         )}
 
         {tab === 'Documents' && (
-          <Section title="Submitted documents">
-            <Documents detail={d} />
-          </Section>
+          <div className="space-y-4">
+            <Section title="Submitted documents">
+              <Documents detail={d} />
+            </Section>
+            <Section title="Additional document requests">
+              <DocumentRequests appId={id} canRequest={can('applicationReviews')} />
+            </Section>
+          </div>
         )}
 
         {tab === 'Checklist' && (

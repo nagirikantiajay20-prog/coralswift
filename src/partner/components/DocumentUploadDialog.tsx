@@ -18,6 +18,8 @@ export interface UploadTarget {
   category: string
   /** Present when replacing: uploads a new version of this document (old versions are kept). */
   documentId?: string
+  /** Document request this upload fulfils (new uploads only). */
+  requestId?: string
 }
 
 /** Select / drop a file, validate, upload with progress, cancel and retry. Backend is authoritative. */
@@ -33,7 +35,10 @@ export function DocumentUploadDialog({
   return (
     <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
       {target && (
-        <Body key={`${target.category}:${target.documentId}`} {...{ target, onClose, onDone }} />
+        <Body
+          key={`${target.category}:${target.documentId}:${target.requestId}`}
+          {...{ target, onClose, onDone }}
+        />
       )}
     </Dialog>
   )
@@ -72,7 +77,12 @@ function Body({
     setError(null)
     setFailed(false)
     setProgress(0)
-    const o = { expiresOn: expires || undefined, signal: ctl.signal, onProgress: setProgress }
+    const o = {
+      requestId: target.requestId,
+      expiresOn: expires || undefined,
+      signal: ctl.signal,
+      onProgress: setProgress,
+    }
     try {
       if (target.documentId) await svc.replace(target.documentId, file, o)
       else await svc.upload(file, target.category, o)

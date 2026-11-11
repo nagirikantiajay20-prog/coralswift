@@ -9,8 +9,9 @@ import { Card } from '@/components/ui/card'
 import { AssignDialog as EnquiryAssignDialog } from '@/features/business-enquiries/components/EnquiryActions'
 import { AssignDialog as ApplicationAssignDialog } from '@/features/partner-applications/components/ReviewActions'
 import { toAppError } from '@/services/api/errors'
+import type { WorkloadData } from '../services/leadAssignmentService'
 import type { AssignCategory, AssignRecord, CategoryCounts } from '../types'
-import { assigneeLabel, CATEGORIES, tallyWorkload } from '../utils/assignment'
+import { CATEGORIES } from '../utils/assignment'
 
 export const isForbidden = (e: unknown) => toAppError(e).status === 403
 
@@ -147,73 +148,51 @@ export function CountsSection({ cats, queries }: { cats: AssignCategory[]; queri
   )
 }
 
-/** Workload tallied from the newest records only; the coverage line says how much was counted. */
-export function WorkloadSection({
-  cats,
-  samples,
-  me,
-  names,
-  size,
-}: {
-  cats: AssignCategory[]
-  samples: UseQueryResult<{ records: AssignRecord[]; meta: Record<string, unknown> | null }>[]
-  me?: string
-  names?: Map<string, string>
-  size: number
-}) {
-  const ok = samples.filter((s) => s.data)
-  const rows = tallyWorkload(ok.flatMap((s) => s.data?.records ?? []))
-  const partial = ok.some((s) => {
-    const t = s.data?.meta?.total
-    return typeof t !== 'number' || t > s.data!.records.length
-  })
-  const pending = samples.some((s) => s.isPending)
+/** Server-side open-enquiry workload per assignee (GET /admin/workload). Applications are not included. */
+export function WorkloadSection({ q }: { q: UseQueryResult<WorkloadData> }) {
+  const d = q.data
   return (
     <Card className="mt-6">
       <div className="border-b border-line p-4">
         <h2 className="text-lg font-semibold">Workload by administrator</h2>
         <p className="text-xs text-muted">
-          {partial
-            ? `Counted from the newest ${size} records per category, not every record. Counts can be lower than the true workload.`
-            : 'Counted from all records in each category.'}{' '}
-          The backend has no workload endpoint, and no capacity limits are defined. Names need super
-          administrator access.
+          Open enquiries per assignee, counted by the server. No capacity limits are defined, and
+          applications are not included.
         </p>
-        {samples.some((s) => s.isError) && (
-          <p role="alert" className="text-xs text-rose">
-            Not counted:{' '}
-            {cats
-              .filter((_, i) => samples[i]?.isError)
-              .map((c) => CATEGORIES.find((x) => x.key === c)?.label)
-              .join(', ')}
-            .
-          </p>
-        )}
       </div>
-      {pending && !rows.length ? (
+      {q.isPending ? (
         <p role="status" className="p-4 text-sm text-muted">
           Loading workload…
         </p>
+      ) : q.isError ? (
+        isForbidden(q.error) ? (
+          <AccessDenied what="workload" />
+        ) : (
+          <p role="alert" className="p-4 text-sm text-rose">
+            {toAppError(q.error).message}
+          </p>
+        )
       ) : (
         <DataTable
-          rows={rows}
-          rowKey={(w) => w.assigneeId}
-          emptyTitle="No assigned records in the counted sample"
+          rows={d?.rows ?? []}
+          rowKey={(w) => w.assignee_id ?? 'unassigned'}
+          emptyTitle="No open enquiries"
           columns={[
-            { header: 'Administrator', cell: (w) => assigneeLabel(w.assigneeId, me, names) },
-            { header: 'Assigned', cell: (w) => w.assigned },
-            { header: 'Pending', cell: (w) => w.pending },
-            { header: 'Overdue follow-ups', cell: (w) => w.overdue },
             {
-              header: 'By category',
-              cell: (w) =>
-                cats
-                  .filter((c) => w.byCategory[c])
-                  .map((c) => `${CATEGORIES.find((x) => x.key === c)?.label}: ${w.byCategory[c]}`)
-                  .join(' · '),
+              header: 'Administrator',
+              cell: (w) => w.assignee_name ?? (w.assignee_id ? 'Unknown user' : 'Unassigned'),
             },
+            { header: 'Open enquiries', cell: (w) => w.open_enquiries },
+            { header: 'Overdue follow-ups', cell: (w) => w.overdue_follow_ups },
+            { header: 'SLA breached', cell: (w) => w.sla_breached },
           ]}
         />
+      )}
+      {d && (
+        <p className="border-t border-line px-4 py-2 text-xs text-muted">
+          Total: {d.totals.open_enquiries} open · {d.totals.overdue_follow_ups} overdue follow-ups ·{' '}
+          {d.totals.sla_breached} SLA breached
+        </p>
       )}
     </Card>
   )

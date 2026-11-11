@@ -1,10 +1,13 @@
+import { isAxiosError } from 'axios'
 import { endpoints } from '@/config/endpoints'
 import { STAFF_ROLE_TO_ROLE } from '@/config/permissions'
+import { partnerAuthService } from '@/partner/services/partnerAuthService'
 import { api, requireEndpoint } from '@/services/api/client'
-import { useAuthStore } from '@/store/authStore'
+import { storedRefreshToken, useAuthStore } from '@/store/authStore'
+import { ownedByAnotherLiveTab } from '@/store/tabOwner'
 import type { SessionUser } from '@/types/auth'
 import type { ChangePasswordValues } from '../schemas'
-import type { ApiEnvelope, MeOut, MfaEnrollOut, TokenOut } from '../types'
+import type { ApiEnvelope, MeOut, MfaEnrollOut, PermissionsOut, TokenOut } from '../types'
 
 const e = endpoints.auth
 const data = <T>(r: { data: ApiEnvelope<T> }) => r.data.data
@@ -14,6 +17,12 @@ export class NotAStaffAccountError extends Error {
     super('This account does not have access to the Admin Console.')
   }
 }
+
+let restoring: Promise<void> | null = null
+
+/** No answer from the server (offline, timeout, 5xx, 429): says nothing about the token itself. */
+const isTransient = (e: unknown) =>
+  isAxiosError(e) && (!e.response || e.response.status >= 500 || e.response.status === 429)
 
 /** Centralised auth calls (endpoints/schemas verified against the backend OpenAPI spec). */
 export const authService = {
@@ -35,8 +44,24 @@ export const authService = {
       throw new NotAStaffAccountError()
     }
     const user = { id: me.id, name: me.full_name, email: me.email, role }
+    const perms = await authService.loadPermissions()
     useAuthStore.getState().setUser(user)
+    useAuthStore.getState().setPermissions(perms.paths, perms.matrix)
     return user
+  },
+
+  /** GET /auth/permissions. Any failure or empty answer returns null so the role hint applies. */
+  async loadPermissions(): Promise<{ paths: string[] | null; matrix: Record<string, string[]> | null }> {
+    try {
+      const d = data(await api.get<ApiEnvelope<PermissionsOut>>(e.permissions))
+      const paths = (d?.modules ?? [])
+        .flatMap((m) => m.endpoints)
+        .filter((x) => x.method.toUpperCase() === 'GET')
+        .map((x) => x.path)
+      return { paths: paths.length ? paths : null, matrix: d?.role_matrix ?? null }
+    } catch {
+      return { paths: null, matrix: null }
+    }
   },
 
   async verifyMfa(input: { code: string } | { recovery_code: string }) {
@@ -59,9 +84,42 @@ export const authService = {
       )
       s.setTokens(t.access_token, t.refresh_token)
       return true
-    } catch {
-      return false
+    } catch (e) {
+      if (isTransient(e)) throw e // keep the session; the caller decides whether to retry
+      return false // rejected / revoked / reused: the session is over
     }
+  },
+
+  /**
+   * Startup: exchange the tab's stored refresh token (POST /auth/refresh) for a session, then
+   * GET /auth/me decides staff vs partner. Single-flight (the token is one-time use, and
+   * StrictMode mounts twice). Any failure clears the stored token: no retry loop.
+   */
+  restore(): Promise<void> {
+    restoring ??= (async () => {
+      const st = useAuthStore.getState()
+      try {
+        const rt = storedRefreshToken()
+        if (!rt) return
+        // A duplicated tab copies sessionStorage; using the one-time token twice revokes the session.
+        if (await ownedByAnotherLiveTab()) {
+          st.clear() // this tab only: nothing is sent to the server
+          return
+        }
+        st.setTokens('', rt) // lets refresh() read the token; replaced on success
+        if (!(await authService.refresh())) throw new Error('refresh failed')
+        const me = data(await api.get<ApiEnvelope<MeOut>>(e.me))
+        if (me.user_type === 'partner')
+          await partnerAuthService.loadSession() // cycle is safe: only used at call time
+        else await authService.loadSession()
+      } catch (e) {
+        // Offline / server trouble: stay signed out for now but keep the stored token for the next load.
+        if (!isTransient(e)) useAuthStore.getState().clear()
+      } finally {
+        useAuthStore.setState({ restoring: false })
+      }
+    })()
+    return restoring
   },
 
   /** POST /auth/logout revokes the server session; local state is always cleared. */

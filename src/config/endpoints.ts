@@ -13,6 +13,7 @@ export const endpoints = {
     refresh: `${AUTH}/refresh`,
     logout: `${AUTH}/logout`,
     me: `${AUTH}/me`,
+    permissions: `${AUTH}/permissions`, // GET PermissionsOut { account_type, staff_role, modules[{module, endpoints[{method,path}]}], role_matrix? }
     mfaEnroll: `${AUTH}/mfa/enroll`,
     mfaConfirm: `${AUTH}/mfa/confirm`,
     mfaVerify: `${AUTH}/mfa/verify`,
@@ -49,7 +50,10 @@ export const reviewEndpoints = {
   docDownload: (id: string, doc: string) => `${REVIEW}/${id}/documents/${doc}/download`,
   /** POST { email, full_name, organization_id? } -> 201 { organization_id }; super administrator only; 409 on conflict. */
   invitePartner: '/api/v1/reviewer/invitations',
-  reviewers: '/api/v1/admin/users', // GET ?role=partner_reviewer (super administrator only)
+  /** GET ?purpose=applications -> [{id, full_name, staff_role}]; any staff role (live 2026-11-10). */
+  reviewers: '/api/v1/admin/assignees',
+  /** GET -> TransitionRule[] { from, to, needs_reason, needs_assigned_reviewer, dedicated_endpoint }. */
+  transitions: '/api/v1/reviewer/transitions',
 } as const
 
 /** Verified in openapi.json (fetched 2026-11-09). One enquiry resource; `type` distinguishes general/project/partner/strategic/meeting. */
@@ -59,9 +63,15 @@ export const enquiryEndpoints = {
   detail: (id: string) => `${ENQ}/${id}`, // GET EnquiryDetail; PATCH { status?, priority? }
   assign: (id: string) => `${ENQ}/${id}/assign`, // POST { user_id: string | null }
   followUps: (id: string) => `${ENQ}/${id}/follow-ups`, // POST { note, due_at? } -> 201 FollowUpOut
+  /** GET status,kind,assignee_id,mine,due_from,due_to,sort,page -> FollowUpOut[] (counts in meta). */
+  allFollowUps: '/api/v1/admin/follow-ups',
+  followUp: (id: string, fu: string) => `${ENQ}/${id}/follow-ups/${fu}`, // PATCH { note?, due_at?, assignee_id? } (null clears)
+  cancelFollowUp: (id: string, fu: string) => `${ENQ}/${id}/follow-ups/${fu}/cancel`, // POST
+  activity: (id: string) => `${ENQ}/${id}/activity`, // GET action,page,page_size -> ActivityOut[]
+  documents: (id: string) => `${ENQ}/${id}/documents`, // GET attachment list
   completeFollowUp: (id: string, fu: string) => `${ENQ}/${id}/follow-ups/${fu}/complete`, // POST
   download: (id: string, doc: string) => `${ENQ}/${id}/documents/${doc}/download`, // GET blob, audited
-  users: '/api/v1/admin/users', // GET ?role= (super administrator only)
+  users: '/api/v1/admin/assignees', // GET ?purpose=enquiries; any staff role
   /** type=meeting only. confirm { start, end, calendar_checked: true, note? }; decline/cancel { reason<=4000 }. */
   meeting: (id: string, a: 'confirm' | 'decline' | 'cancel') => `/api/v1/admin/meetings/${id}/${a}`,
 } as const
@@ -71,6 +81,8 @@ const ORG = '/api/v1/admin/organizations'
 export const partnerEndpoints = {
   list: ORG, // GET q(<=100), status=active|suspended, page, page_size<=100 -> OrgRow[]
   detail: (id: string) => `${ORG}/${id}`, // GET untyped dict (profile + applications; financial data super admin only)
+  activity: (id: string) => `${ORG}/${id}/activity`, // GET page,page_size -> OrgActivityRow[] (never strategic events)
+  revisions: (id: string) => `${ORG}/${id}/revisions`, // GET page,page_size -> RevisionRow[] (version, changed_by_name, changes, created_at)
   status: (id: string) => `${ORG}/${id}/status`, // POST { status: active|suspended, reason 1..4000 }; super administrator
 } as const
 
@@ -79,11 +91,18 @@ export const partnerEndpoints = {
  * status/role/invitation-state endpoints. Account provisioning = `reviewEndpoints.invitePartner`;
  * activation = `POST /auth/invitations/accept` (partner-side, token never handled here).
  */
-export type AccountAction = 'invitation/resend' | 'invitation/revoke' | 'suspend' | 'reactivate'
+export type AccountAction =
+  'invitation/resend' | 'invitation/revoke' | 'suspend' | 'reactivate' | 'password-reset'
 
 export const accountEndpoints = {
   /** GET (super administrator) record_type, action, actor_user_id, organization_id, created_from/to, page, page_size<=100 -> AuditRow[] */
   audit: '/api/v1/admin/audit',
+  /** GET -> string[] of actions present in the log. */
+  auditActions: '/api/v1/admin/audit/actions',
+  /** GET same filters as audit (+ q, sort) -> formula-safe CSV; super administrator. */
+  auditCsv: '/api/v1/admin/audit.csv',
+  /** GET (super administrator) -> AccountMetricsOut. */
+  accountMetrics: '/api/v1/admin/accounts/metrics',
   /** GET q, user_type, status(invited|active|deactivated), invitation, sort, page, page_size -> AccountOut[] */
   accounts: '/api/v1/admin/accounts',
   /** POST /{id}/invitation/resend | invitation/revoke | suspend | reactivate; no body. Backend enforces who may call. */
@@ -98,11 +117,14 @@ export const accountEndpoints = {
 const NOTIF = '/api/v1/admin/notifications'
 const TPL = '/api/v1/admin/notification-templates'
 export const communicationEndpoints = {
+  /** Own staff feed (2026-11 contract): GET unread, archived, page, page_size (meta.unread); POST /read-all, /{id}/read, /{id}/archive. */
+  feed: '/api/v1/admin/feed',
   outbox: NOTIF, // GET status (default failed), page, page_size<=100
   dispatch: `${NOTIF}/dispatch`, // POST -> 202 counts; retries eligible emails after the response
   retry: (id: string) => `${NOTIF}/${id}/retry`, // POST -> 200; resets a failed email
   templates: TPL, // GET -> TemplateOut[] (all built-in keys; customised ones include text)
   template: (key: string) => `${TPL}/${encodeURIComponent(key)}`, // PUT TemplateIn / DELETE (revert to built-in)
+  placeholders: `${TPL}/placeholders`, // GET -> { name }[]
   preview: (key: string) => `${TPL}/${encodeURIComponent(key)}/preview`, // POST TemplateIn -> dict; sends nothing
 } as const
 
@@ -118,6 +140,8 @@ export const contentEndpoints = {
   detail: (id: string) => `${CONTENT}/${id}`, // GET / PATCH ContentUpdate (draft only)
   versions: (id: string) => `${CONTENT}/${id}/versions`, // GET -> VersionOut[]
   action: (id: string, a: ContentAction) => `${CONTENT}/${id}/${a}`,
+  /** POST { publish_at } schedules approved, claims-cleared content; DELETE cancels. */
+  schedule: (id: string) => `${CONTENT}/${id}/schedule`,
   attachment: (id: string) => `${CONTENT}/${id}/attachment`, // POST multipart file, version_label<=40; draft only; 413/415
   claims: '/api/v1/admin/content-claims', // GET status, category, page, page_size / POST ClaimIn
   claim: (id: string) => `/api/v1/admin/content-claims/${id}`, // PATCH ClaimUpdate
@@ -171,4 +195,6 @@ export const governanceEndpoints = {
   changes: '/api/v1/admin/profile-change-requests',
   decide: (id: string) => `/api/v1/admin/profile-change-requests/${id}/decide`,
   readiness: '/api/v1/admin/launch-readiness',
+  /** GET read-only SecurityPolicyOut (any staff role may be refused; handle 403). */
+  securityPolicy: '/api/v1/admin/security-policy',
 } as const

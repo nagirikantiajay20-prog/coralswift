@@ -14,7 +14,7 @@ export const api = axios.create({
  */
 let auth = {
   getToken: (): string | null => null,
-  /** Resolves true when a new access token was obtained. */
+  /** Resolves true when a new access token was obtained, false when the session is over; rejects on transient failure. */
   refresh: (): Promise<boolean> => Promise.resolve(false),
   onUnauthorized: () => {},
 }
@@ -43,7 +43,14 @@ api.interceptors.response.use(
     if (!cfg._retried && auth.getToken()) {
       cfg._retried = true
       refreshing ??= auth.refresh().finally(() => (refreshing = null))
-      if (await refreshing) return api(cfg)
+      let renewed: boolean
+      try {
+        renewed = await refreshing
+      } catch {
+        // Transient (network / 5xx): the session is not proven dead, so keep it and surface the error.
+        return Promise.reject(error)
+      }
+      if (renewed) return api(cfg)
     }
     auth.onUnauthorized()
     return Promise.reject(error)

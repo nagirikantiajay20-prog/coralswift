@@ -1,4 +1,5 @@
 import { Bell, LogOut, Menu, UserRound } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { authService } from '@/features/auth/services/authService'
@@ -10,6 +11,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { PARTNER_NAVIGATION } from '../config/navigation'
 import { PARTNER_ROUTES } from '../config/routes'
+import { partnerDashboardService } from '../services/partnerDashboardService'
 
 const link = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -42,6 +44,14 @@ function Nav({ onNavigate }: { onNavigate?: () => void }) {
 export function PartnerLayout() {
   const [open, setOpen] = useState(false)
   const partner = useAuthStore((s) => s.partner)
+  // Server-side count (refetched after read/unread mutations via the shared notifications key).
+  const { data: unread = 0 } = useQuery({
+    queryKey: ['partner', partner?.id, 'notifications', 'unread-count'],
+    queryFn: partnerDashboardService.unreadCount,
+    enabled: !!partner,
+    refetchInterval: 60_000,
+    retry: false,
+  })
   const navigate = useNavigate()
   const logout = async () => {
     await authService.signOut() // revokes the server session; local state cleared regardless
@@ -84,9 +94,23 @@ export function PartnerLayout() {
               <span className="font-normal text-muted"> · {partner.organizationName}</span>
             )}
           </p>
-          <Button variant="ghost" size="icon" aria-label="Notifications" asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Notifications"
+            className="relative"
+            asChild
+          >
             <Link to={PARTNER_ROUTES.notifications}>
               <Bell className="size-5" />
+              {unread > 0 && (
+                <span
+                  aria-label={`${unread} unread`}
+                  className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-rose-700 px-1 text-center text-[10px] font-semibold leading-4 text-white"
+                >
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              )}
             </Link>
           </Button>
           <Button variant="ghost" size="icon" aria-label="Account" asChild>

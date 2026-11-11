@@ -9,7 +9,9 @@ import { PARTNER_ROUTES } from '../config/routes'
 export function PartnerRoute() {
   const partner = useAuthStore((s) => s.partner)
   const staff = useAuthStore((s) => s.user)
+  const restoring = useAuthStore((s) => s.restoring)
   const location = useLocation()
+  if (restoring) return null
   if (partner) return <Outlet />
   if (staff) {
     return (

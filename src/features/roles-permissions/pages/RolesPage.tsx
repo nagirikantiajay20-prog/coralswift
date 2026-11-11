@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Card } from '@/components/ui/card'
+import { useAuthStore } from '@/store/authStore'
 import { ROLE_MODULES, ROLES, type Role } from '@/config/permissions'
 import { useStaffList } from '@/features/user-management/hooks/useUsers'
 import { metrics } from '@/features/user-management/utils/users'
@@ -13,6 +14,7 @@ const VERIFIED = [
 
 export default function RolesPage() {
   const counts = metrics(useStaffList().data ?? []).byRole
+  const matrix = useAuthStore((s) => s.roleMatrix)
   return (
     <>
       <PageHeader
@@ -35,10 +37,21 @@ export default function RolesPage() {
               <h2 className="font-semibold">{label}</h2>
               <p className="font-mono text-xs text-muted">{key}</p>
               <p className="mt-2 text-sm">Members: {counts[key] ?? 0}</p>
-              <p className="mt-2 text-xs font-medium uppercase text-muted">
-                Console navigation (UI hint, not a permission)
-              </p>
-              <p className="text-sm">{mods === 'all' ? 'All modules' : mods.join(', ')}</p>
+              {matrix?.[key] ? (
+                <>
+                  <p className="mt-2 text-xs font-medium uppercase text-muted">
+                    Modules (from the backend permission matrix)
+                  </p>
+                  <p className="text-sm">{matrix[key].join(', ') || 'None'}</p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-2 text-xs font-medium uppercase text-muted">
+                    Console navigation (UI hint, not a permission)
+                  </p>
+                  <p className="text-sm">{mods === 'all' ? 'All modules' : mods.join(', ')}</p>
+                </>
+              )}
             </Card>
           )
         })}

@@ -29,8 +29,7 @@ import {
   useCategoryCounts,
   useLeadList,
   useStaffNames,
-  useWorkloadSample,
-  WORKLOAD_SAMPLE,
+  useWorkload,
 } from '../hooks/useLeadAssignment'
 import type { LeadFilters } from '../services/leadAssignmentService'
 import type { AssignCategory, AssignRecord } from '../types'
@@ -53,7 +52,7 @@ export default function LeadAssignmentPage() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const q = useDeferredValue(search.trim())
-  const names = useStaffNames(isSuper)
+  const names = useStaffNames(true)
   const isApps = category === 'applications'
 
   const reset =
@@ -83,12 +82,12 @@ export default function LeadAssignmentPage() {
   }
   const list = useLeadList(category, filters, page, PAGE_SIZE)
   const counts = useCategoryCounts(keys, user?.id ?? '')
-  const samples = useWorkloadSample(keys)
+  const workload = useWorkload()
 
   const refresh = () => {
     void list.refetch()
     counts.forEach((c) => void c.refetch())
-    samples.forEach((s) => void s.refetch())
+    void workload.refetch()
   }
   const canAssign = (r: AssignRecord) =>
     r.category === 'applications'
@@ -266,13 +265,7 @@ export default function LeadAssignmentPage() {
         )}
       </Card>
 
-      <WorkloadSection
-        cats={keys}
-        samples={samples}
-        me={user?.id}
-        names={names.data}
-        size={WORKLOAD_SAMPLE}
-      />
+      <WorkloadSection q={workload} />
     </>
   )
 }

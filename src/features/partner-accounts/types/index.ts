@@ -38,8 +38,16 @@ export interface AccountRow {
   user_type: 'partner' | 'staff'
   status: 'invited' | 'active' | 'deactivated'
   invitation_state: string
+  /** Email delivery of the invitation (pending|sent|logged|failed); NOT account activation. */
+  invitation_delivery_status?: string | null
+  invitation_delivery_at?: string | null
   mfa_enabled: boolean
   last_login_at: string | null
   created_at: string
   organization: { id: string; legal_name: string } | null
+}
+
+/** Backend `AccountDetail` (GET /admin/accounts/{user_id}): AccountOut plus recent activity. */
+export interface AccountDetail extends AccountRow {
+  recent_activity: { action: string; actor_name: string | null; created_at: string }[]
 }

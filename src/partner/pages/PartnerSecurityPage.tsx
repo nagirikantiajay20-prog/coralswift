@@ -102,8 +102,23 @@ function Password() {
 }
 
 function Mfa() {
-  const [mode, setMode] = useState<'idle' | 'enroll' | 'regen'>('idle')
+  const pid = useAuthStore((st) => st.partner?.id)
+  const qc = useQueryClient()
+  const me = useQuery({ queryKey: ['partner', pid, 'me'], queryFn: s.me, enabled: !!pid, retry: 1 })
+  const enabled = me.data?.mfa_enabled
+  const [mode, setMode] = useState<'idle' | 'enroll' | 'regen' | 'disable'>('idle')
+  const [pw, setPw] = useState('')
   const [code, setCode] = useState('')
+  const disable = useMutation({
+    mutationFn: () => s.disableMfa({ password: pw, code: code.trim() }),
+    onSuccess: () => {
+      setPw('')
+      setCode('')
+      setMode('idle')
+      toast.success('Two-step verification turned off.')
+      void qc.invalidateQueries({ queryKey: ['partner', pid, 'me'] })
+    },
+  })
   const [codes, setCodes] = useState<string[] | null>(null)
   const regen = useMutation({
     mutationFn: () => s.regenerateRecoveryCodes(code.trim()),
@@ -115,9 +130,9 @@ function Mfa() {
   return (
     <Panel title="Two-step verification (authenticator app)">
       <p className="text-sm text-muted">
-        Status: the backend does not report whether two-step verification is on for your account. It
-        offers enrollment and recovery-code replacement only; there is no endpoint to turn it off.
-        Contact Coral Swift if you lose your authenticator and recovery codes.
+        Status: {enabled === undefined ? 'unknown' : enabled ? 'on' : 'off'}. Once on, a code is
+        required at every sign-in. Contact Coral Swift if you lose your authenticator and recovery
+        codes.
       </p>
       {codes ? (
         <>
@@ -134,6 +149,42 @@ function Mfa() {
         <div className="mt-3 max-w-md">
           <MfaEnroll onDone={() => setMode('idle')} />
         </div>
+      ) : mode === 'disable' ? (
+        <form
+          className="mt-3 max-w-xs space-y-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            disable.mutate()
+          }}
+        >
+          <Label htmlFor="mfa-off-pw">Current password</Label>
+          <Input
+            id="mfa-off-pw"
+            type="password"
+            autoComplete="current-password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            required
+          />
+          <Label htmlFor="mfa-off-code">Current authenticator code</Label>
+          <Input
+            id="mfa-off-code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            required
+          />
+          <Err e={disable.error} />
+          <div className="flex gap-2">
+            <Button type="submit" disabled={!pw || !code.trim() || disable.isPending}>
+              Turn off
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setMode('idle')}>
+              Cancel
+            </Button>
+          </div>
+        </form>
       ) : mode === 'regen' ? (
         <form
           className="mt-3 max-w-xs space-y-2"
@@ -162,6 +213,11 @@ function Mfa() {
           <Button variant="secondary" onClick={() => setMode('regen')}>
             Replace recovery codes
           </Button>
+          {enabled && (
+            <Button variant="secondary" onClick={() => setMode('disable')}>
+              Turn off
+            </Button>
+          )}
         </div>
       )}
     </Panel>
@@ -178,6 +234,14 @@ function Sessions() {
     mutationFn: s.revokeSession,
     onSuccess: () => {
       toast.success('Session signed out.')
+      void qc.invalidateQueries({ queryKey: key })
+    },
+  })
+  const [askAll, setAskAll] = useState(false)
+  const revokeAll = useMutation({
+    mutationFn: s.revokeOtherSessions,
+    onSuccess: () => {
+      toast.success('All other sessions signed out.')
       void qc.invalidateQueries({ queryKey: key })
     },
   })
@@ -201,6 +265,7 @@ function Sessions() {
                   </p>
                   <p className="text-muted">
                     Started {when(r.created_at)} · Last active {when(r.last_used_at)}
+                    {r.expires_at ? ` · Expires ${when(r.expires_at)}` : ''}
                   </p>
                 </div>
                 {!r.current && (
@@ -219,10 +284,27 @@ function Sessions() {
         )}
       </Async>
       <Err e={revoke.error} />
-      <p className="mt-3 text-xs text-muted">
-        Expiry times are not returned by the backend. There is no sign-out-everywhere endpoint; sign
-        out each session above. Use the header menu to sign out of this one.
-      </p>
+      <Err e={revokeAll.error} />
+      {rows.some((r) => !r.current) && (
+        <Button
+          className="mt-3"
+          variant="secondary"
+          disabled={revokeAll.isPending}
+          onClick={() => setAskAll(true)}
+        >
+          Sign out all other sessions
+        </Button>
+      )}
+      <p className="mt-3 text-xs text-muted">Use the header menu to sign out of this session.</p>
+      <ConfirmDialog
+        open={askAll}
+        onOpenChange={setAskAll}
+        title="Sign out all other sessions?"
+        description="Every other device will need to sign in again. This session stays signed in."
+        confirmLabel="Sign out all"
+        destructive
+        onConfirm={() => revokeAll.mutate()}
+      />
       <ConfirmDialog
         open={!!target}
         onOpenChange={(o) => !o && setTarget(null)}

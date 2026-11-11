@@ -77,3 +77,41 @@ export const canAccess = (role: Role | undefined, module: ModuleKey): boolean =>
   const allowed = ROLE_MODULES[role]
   return allowed === 'all' || allowed.includes(module)
 }
+
+/**
+ * Representative backend GET route per module. When GET /auth/permissions has loaded, a module is
+ * shown only if the backend lists a GET route under this prefix (paths compared without /api/v1).
+ * Modules without a distinct route (dashboard, account, strategicEnquiries, discussions,
+ * applicationReviews, onboarding) keep the role hint. UX only: the backend authorises every call.
+ */
+export const MODULE_PROBES: Partial<Record<ModuleKey, string>> = {
+  enquiries: '/admin/enquiries',
+  leadAssignment: '/admin/workload',
+  followUps: '/admin/follow-ups',
+  applications: '/reviewer/applications',
+  documents: '/admin/documents',
+  partners: '/admin/organizations',
+  partnerAccounts: '/admin/accounts',
+  communications: '/admin/notification-templates',
+  notifications: '/admin/feed',
+  content: '/admin/content',
+  reports: '/admin/reports',
+  users: '/admin/users',
+  auditLogs: '/admin/audit',
+  settings: '/admin/settings',
+  governance: '/admin/privacy-requests',
+}
+
+const norm = (p: string) => p.replace(/^\/api\/v1/, '')
+
+/** Backend-derived access when permissions are known, otherwise the role hint above. */
+export const canAccessWith = (
+  role: Role | undefined,
+  module: ModuleKey,
+  permittedPaths: string[] | null,
+): boolean => {
+  if (!role) return false
+  const probe = MODULE_PROBES[module]
+  if (!permittedPaths || !probe) return canAccess(role, module)
+  return permittedPaths.some((p) => norm(p).startsWith(probe))
+}

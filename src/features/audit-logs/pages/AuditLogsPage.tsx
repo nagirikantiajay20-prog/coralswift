@@ -13,7 +13,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input, Label, Select } from '@/components/ui/input'
 import { formatDateTime, humanize, pageCount } from '@/features/partner-applications/utils/format'
 import { toAppError } from '@/services/api/errors'
-import { useActorNames, useAuditPage, useAuditSample, useAuditTotals } from '../hooks/useAudit'
+import { toast } from 'sonner'
+import { auditLogsService } from '../services/auditLogsService'
+import {
+  useActorNames,
+  useAuditActions,
+  useAuditPage,
+  useAuditSample,
+  useAuditTotals,
+} from '../hooks/useAudit'
 import { PAGE_SIZE } from '../services/auditLogsService'
 import type { AuditEntry, AuditFilters } from '../types'
 import { countBy, dayBound, searchEntries } from '../utils/audit'
@@ -49,7 +57,7 @@ function Dashboard() {
   const { total, today } = useAuditTotals()
   const sample = useAuditSample()
   const { name } = useActorNames()
-  const e = sample.data ?? []
+  const e = sample.data?.entries ?? []
   return (
     <section aria-label="Audit summary" className="mb-6 space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -87,6 +95,13 @@ function Dashboard() {
           <Breakdown title="By module" rows={countBy(e, (r) => r.recordType)} />
         </div>
       )}
+      {sample.isSuccess && (sample.data.partial || (total.data !== undefined && e.length < total.data)) && (
+        <p role="note" className="text-xs text-muted">
+          Breakdowns are incomplete: {e.length.toLocaleString()}
+          {total.data !== undefined ? ` of ${total.data.toLocaleString()}` : ''} events were loaded
+          (safety limit), so these counts are understated.
+        </p>
+      )}
     </section>
   )
 }
@@ -99,6 +114,18 @@ export default function AuditLogsPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const q = useAuditPage(applied, page)
+  const actions = useAuditActions()
+  const [exporting, setExporting] = useState(false)
+  const exportCsv = async () => {
+    setExporting(true)
+    try {
+      await auditLogsService.exportCsv(applied)
+    } catch (e) {
+      toast.error(toAppError(e).message)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const rangeInvalid = !!draft.fromDay && !!draft.toDay && draft.fromDay > draft.toDay
   const apply = (ev: FormEvent) => {
@@ -122,7 +149,7 @@ export default function AuditLogsPage() {
 
   const err = q.isError ? toAppError(q.error) : undefined
   const rows = searchEntries(q.data?.entries ?? [], search, name)
-  const modules = [...new Set((sample.data ?? []).map((r) => r.recordType))].filter(
+  const modules = [...new Set((sample.data?.entries ?? []).map((r) => r.recordType))].filter(
     (m) => m !== 'Restricted',
   )
 
@@ -134,7 +161,11 @@ export default function AuditLogsPage() {
     {
       header: 'Actor',
       cell: (r) =>
-        r.actorUserId ? name(r.actorUserId) : <StatusBadge label={humanize(r.actorType)} />,
+        r.actorUserId ? (
+          (r.actorName ?? name(r.actorUserId))
+        ) : (
+          <StatusBadge label={humanize(r.actorType)} />
+        ),
     },
     {
       header: 'Action',
@@ -211,9 +242,15 @@ export default function AuditLogsPage() {
                 <Input
                   id="f-action"
                   maxLength={80}
+                  list="audit-actions"
                   value={draft.action}
                   onChange={(e) => setDraft({ ...draft, action: e.target.value })}
                 />
+                <datalist id="audit-actions">
+                  {(actions.data ?? []).map((a) => (
+                    <option key={a} value={a} />
+                  ))}
+                </datalist>
               </div>
               <div>
                 <Label htmlFor="f-from">From date</Label>
@@ -239,6 +276,14 @@ export default function AuditLogsPage() {
                 </Button>
                 <Button type="button" variant="secondary" onClick={reset}>
                   Reset
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => void exportCsv()}
+                  disabled={exporting}
+                >
+                  {exporting ? 'Exporting…' : 'Export CSV'}
                 </Button>
               </div>
               {rangeInvalid && (

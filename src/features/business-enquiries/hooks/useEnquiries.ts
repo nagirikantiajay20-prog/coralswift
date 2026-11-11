@@ -30,7 +30,7 @@ export const useEnquiryDetail = (id: string) =>
 export const useStaff = (enabled: boolean) =>
   useQuery({
     queryKey: ['enquiries', 'staff'],
-    queryFn: () => svc.staff('business_development_manager'),
+    queryFn: () => svc.staff('enquiries'),
     enabled,
     retry: false,
   })

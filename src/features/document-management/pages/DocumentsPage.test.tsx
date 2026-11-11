@@ -20,10 +20,10 @@ const renderPage = () =>
 afterEach(() => vi.restoreAllMocks())
 
 describe('DocumentsPage', () => {
-  it('marks global metrics unavailable instead of inventing numbers', async () => {
+  it('marks metrics the backend cannot supply as unavailable', async () => {
     vi.spyOn(partnerApplicationsService, 'list').mockResolvedValue({ rows: [], meta: null })
     renderPage()
-    expect(screen.getAllByText(/no admin-wide document endpoint/i)).toHaveLength(7)
+    expect(screen.getAllByText(/no admin-wide document endpoint/i)).toHaveLength(2)
     expect(await screen.findByText('No applications found')).toBeInTheDocument()
   })
   it('lists applications with a link to their documents', async () => {

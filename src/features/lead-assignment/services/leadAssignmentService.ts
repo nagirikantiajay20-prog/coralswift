@@ -1,3 +1,4 @@
+import { api } from '@/services/api/client'
 import { businessEnquiriesService as enq } from '@/features/business-enquiries/services/businessEnquiriesService'
 import type { EnquiryListParams } from '@/features/business-enquiries/types'
 import { partnerApplicationsService as apps } from '@/features/partner-applications/services/partnerApplicationsService'
@@ -56,8 +57,25 @@ async function list(category: AssignCategory, f: LeadFilters, page: number, size
 }
 
 /** Thin adapter over the Phase 5 / 8 / 9 services: no new endpoints, no merged resources. */
+export interface WorkloadRow {
+  assignee_id: string | null
+  assignee_name: string | null
+  open_enquiries: number
+  overdue_follow_ups: number
+  sla_breached: number
+}
+export interface WorkloadData {
+  rows: WorkloadRow[]
+  totals: Omit<WorkloadRow, 'assignee_id' | 'assignee_name'>
+}
+
 export const leadAssignmentService = {
   list,
+
+  /** GET /admin/workload: open enquiry counts per assignee (null assignee = unassigned). No capacity limits. */
+  async workload() {
+    return (await api.get<{ data: WorkloadData }>('/api/v1/admin/workload')).data.data
+  },
 
   /** Exact counts from the backend's reported total (page_size=1), never from partial pages. */
   async counts(category: AssignCategory, me: string): Promise<CategoryCounts> {
@@ -75,10 +93,9 @@ export const leadAssignmentService = {
     return { total: all, unassigned: un, mine, overdue: od }
   },
 
-  /** Staff directory used only to show names. Super administrator only (GET /admin/users). */
+  /** Staff directory used only to show names. GET /admin/assignees, any staff role. */
   async staffNames() {
-    const roles = ['business_development_manager', 'partner_reviewer', 'super_administrator']
-    const lists = await Promise.allSettled(roles.map((r) => enq.staff(r)))
+    const lists = await Promise.allSettled([enq.staff('enquiries'), enq.staff('applications')])
     const m = new Map<string, string>()
     for (const l of lists) {
       if (l.status === 'fulfilled') for (const s of l.value) m.set(s.id, s.full_name)

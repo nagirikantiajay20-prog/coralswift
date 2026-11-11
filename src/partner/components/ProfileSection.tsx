@@ -1,11 +1,16 @@
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { FormField } from '@/components/forms/FormField'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { api } from '@/services/api/client'
 import { toAppError } from '@/services/api/errors'
+import { useAuthStore } from '@/store/authStore'
+import { partnerEndpoints } from '../config/endpoints'
 import {
   SERVICE_CATEGORIES,
+  type EditableField,
   type Organization,
   type ProfileChanges,
 } from '../services/partnerProfileService'
@@ -157,6 +162,22 @@ export function ProfileSection({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const busy = saving || requesting
+  const pid = useAuthStore((st) => st.partner?.id)
+  const rules = useQuery({
+    queryKey: ['partner', pid, 'editable-fields'],
+    queryFn: async () =>
+      (await api.get<{ data: EditableField[] | null }>(partnerEndpoints.editableFields)).data
+        .data ?? [],
+    enabled: !!pid && editing,
+    staleTime: 300_000,
+    retry: false,
+  })
+  const direct = SECTIONS[section].fields.filter((f) =>
+    rules.data?.some((r) => r.name === f && r.direct_update),
+  )
+  const approval = SECTIONS[section].fields.filter((f) =>
+    rules.data?.some((r) => r.name === f && r.approval_required),
+  )
   const initial = toDraft(org, section)
   const dirty = editing && JSON.stringify(draft) !== JSON.stringify(initial)
 
@@ -316,6 +337,14 @@ export function ProfileSection({
                 )
               })}
             </div>
+            {(direct.length > 0 || approval.length > 0) && (
+              <p className="text-xs text-muted">
+                {direct.length > 0 && <>Saved immediately: {direct.map(label).join(', ')}. </>}
+                {approval.length > 0 && (
+                  <>Needs staff approval: {approval.map(label).join(', ')}.</>
+                )}
+              </p>
+            )}
             <FormField
               label="Reason for change (required to submit for staff approval)"
               error={errors.reason}

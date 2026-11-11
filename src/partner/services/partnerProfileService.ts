@@ -80,3 +80,12 @@ export const partnerProfileService = {
     api.post(E.changeRequests, { changes, reason }),
   history: async () => (await api.get<Env<Revision[]>>(E.history)).data.data ?? [],
 }
+
+/** Backend EditableFieldOut (GET /partner/organization/editable-fields). */
+export interface EditableField {
+  name: string
+  direct_update: boolean
+  approval_required: boolean
+  nullable: boolean
+  null_clears: boolean
+}

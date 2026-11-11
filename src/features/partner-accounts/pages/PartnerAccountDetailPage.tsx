@@ -11,7 +11,7 @@ import { formatDateTime, humanize, shortId } from '@/features/partner-applicatio
 import { usePartnerDetail } from '@/features/partner-management/hooks/usePartners'
 import { STATUS_TONE } from '@/features/partner-management/utils/partners'
 import { toAppError } from '@/services/api/errors'
-import { useAccountEvents } from '../hooks/useAccounts'
+import { useAccountDetail, useAccountEvents, useOrgAccounts } from '../hooks/useAccounts'
 import { onboardingApplications } from '../utils/accounts'
 
 /** Reuses the Phase 7 ProvisioningPanel (blockers, confirmation, 409 surfaced) on the onboarding application. */
@@ -60,7 +60,65 @@ function Activity({ orgId, enabled }: { orgId: string; enabled: boolean }) {
   )
 }
 
-const NOT_EXPOSED = 'Not exposed by backend'
+function Holder({ userId }: { userId: string }) {
+  const q = useAccountDetail(userId)
+  if (q.isPending) return <LoadingState label="Loading account…" />
+  if (q.isError)
+    return <ErrorState message={toAppError(q.error).message} onRetry={() => void q.refetch()} />
+  const a = q.data
+  return (
+    <div className="space-y-2">
+      <Fields
+        items={[
+          ['Account holder', a.full_name],
+          ['Email', a.email],
+          ['Account status', humanize(a.status)],
+          ['Invitation', humanize(a.invitation_state)],
+          ['Invitation email', a.invitation_delivery_status ? humanize(a.invitation_delivery_status) : null],
+          ['MFA', a.mfa_enabled ? 'Enabled' : 'Not enabled'],
+          ['Last login', a.last_login_at ? formatDateTime(a.last_login_at) : 'Never'],
+        ]}
+      />
+      {a.recent_activity.length > 0 && (
+        <ul className="divide-y divide-line text-sm">
+          {a.recent_activity.map((ev, i) => (
+            <li key={i} className="flex flex-wrap justify-between gap-2 py-1">
+              <span>
+                {humanize(ev.action.replace(/[.:]/g, '_'))}
+                {ev.actor_name ? ` · ${ev.actor_name}` : ''}
+              </span>
+              <time className="text-muted">{formatDateTime(ev.created_at)}</time>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+/** Account holders of this organization (GET /admin/accounts, GET /admin/accounts/{user_id}); super administrator only. */
+function AccountHolders({ orgId, enabled }: { orgId: string; enabled: boolean }) {
+  const q = useOrgAccounts(orgId, enabled)
+  if (!enabled)
+    return <p className="text-sm text-muted">Account details are available to Super Administrators only.</p>
+  if (q.isPending) return <LoadingState label="Loading accounts…" />
+  if (q.isError)
+    return <ErrorState message={toAppError(q.error).message} onRetry={() => void q.refetch()} />
+  return (
+    <div className="space-y-4">
+      {q.data.partial && (
+        <p role="note" className="text-xs text-amber-900">
+          Not every partner account could be searched (safety limit); accounts may be missing here.
+        </p>
+      )}
+      {q.data.rows.length === 0 ? (
+        <EmptyState title="No account has been created for this partner yet" />
+      ) : (
+        q.data.rows.map((a) => <Holder key={a.id} userId={a.id} />)
+      )}
+    </div>
+  )
+}
 
 export default function PartnerAccountDetailPage() {
   const { id = '' } = useParams()
@@ -120,13 +178,13 @@ export default function PartnerAccountDetailPage() {
                 ),
               ],
               ['Partnership status', status ? humanize(status) : null],
-              ['Account holder / email', NOT_EXPOSED],
-              ['Account role and status', NOT_EXPOSED],
-              ['Invitation status / expiry / resend', NOT_EXPOSED],
-              ['Last login', NOT_EXPOSED],
               ['Roles and permissions', 'Not defined for partners in the backend'],
             ]}
           />
+        </Section>
+
+        <Section title="Account holders">
+          <AccountHolders orgId={id} enabled={isSuper} />
         </Section>
 
         <Section title="Related records">
@@ -181,8 +239,8 @@ export default function PartnerAccountDetailPage() {
             <Provisioning appId={candidates[0].id} />
           )}
           <p className="mt-3 text-xs text-muted">
-            The backend cannot report whether this partner already has an account or a pending
-            invitation; duplicate prevention is the backend&apos;s (a 409 is shown verbatim).
+            Existing accounts and invitations are listed under Account holders; duplicate prevention
+            is the backend&apos;s (a 409 is shown verbatim).
           </p>
         </Section>
 

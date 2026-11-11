@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { partnerApplicationsService } from '@/features/partner-applications/services/partnerApplicationsService'
+import { formatDateTime } from '@/features/partner-applications/utils/format'
 import { partnerManagementService as pm } from '@/features/partner-management/services/partnerManagementService'
 import { useAuthStore } from '@/store/authStore'
 import { partnerAccountsService } from '../services/partnerAccountsService'
@@ -75,7 +76,7 @@ describe('account utils', () => {
       actionsFor({ status, invitation_state }).map((x) => x.action)
     expect(a('invited', 'pending')).toEqual(['invitation/resend', 'invitation/revoke'])
     expect(a('invited', 'revoked')).toEqual(['invitation/resend'])
-    expect(a('active', 'accepted')).toEqual(['suspend'])
+    expect(a('active', 'accepted')).toEqual(['password-reset', 'suspend'])
     expect(a('deactivated', 'accepted')).toEqual(['reactivate'])
   })
   it('capability matrix still marks partner role management as missing', () => {
@@ -109,6 +110,35 @@ describe('PartnerAccountsPage', () => {
     expect(screen.getByText('Never')).toBeInTheDocument()
     expect(accounts).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }))
     expect(await screen.findByRole('link', { name: 'Acme Ltd' })).toBeInTheDocument()
+  })
+  it('shows invitation email delivery separately from the account status, with its own timestamp', async () => {
+    vi.spyOn(pm, 'list').mockResolvedValue({ rows: [], meta: null })
+    vi.spyOn(partnerAccountsService, 'list').mockResolvedValue({
+      rows: [
+        {
+          id: 'u1',
+          email: 'pat@acme.test',
+          full_name: 'Pat Partner',
+          user_type: 'partner',
+          status: 'invited',
+          invitation_state: 'pending',
+          invitation_delivery_status: 'sent',
+          invitation_delivery_at: '2026-03-04T05:06:00Z',
+          mfa_enabled: false,
+          last_login_at: null,
+          created_at: '2026-01-01T00:00:00Z',
+          organization: null,
+        },
+      ],
+      meta: null,
+    })
+    wrap(<PartnerAccountsPage />)
+    const row = (await screen.findByText('pat@acme.test')).closest('tr')!
+    // Email was sent, yet the account is still only invited (never shown as active).
+    expect(row.textContent).toContain('Sent')
+    expect(row.textContent).toContain('Invited')
+    expect(row.textContent).not.toContain('Active')
+    expect(row.textContent).toContain(formatDateTime('2026-03-04T05:06:00Z'))
   })
   it('suspend needs confirmation, then posts to the account action endpoint', async () => {
     vi.spyOn(pm, 'list').mockResolvedValue({ rows: [], meta: null })

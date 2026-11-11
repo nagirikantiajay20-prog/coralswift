@@ -33,21 +33,55 @@ export interface Fetched<T> {
 }
 
 export const PAGE = 100
-export const MAX_PAGES = 5
+/** Safety ceiling (5,000 rows). Beyond it `partial` is true and the UI says so. */
+export const MAX_PAGES = 50
 
-/** Pages through a list until the reported total is reached or `maxPages` is hit. */
+const CONCURRENCY = 5
+
+const idOf = (r: unknown): string | undefined => {
+  const id = (r as { id?: unknown } | null)?.id
+  return typeof id === 'string' ? id : undefined
+}
+
+/**
+ * Pages through a list. Page 1 reveals the backend total; the remaining pages are then fetched
+ * in parallel batches (not one by one). Rows with a repeated string `id` (records shifting
+ * between pages while paging) are kept once. If any page fails the whole call rejects: a
+ * half-loaded dataset is never returned as if it were complete.
+ *
+ * `partial` is true when the result is known or suspected to be missing records: the safety
+ * ceiling (`maxPages` x PAGE) cut the list short, or fewer unique rows arrived than the total.
+ * Without a reported total the pages are fetched sequentially until a short page ends the list.
+ */
 export async function fetchAll<T>(
   page: (p: number) => Promise<{ rows: T[]; meta: Record<string, unknown> | null }>,
   maxPages = MAX_PAGES,
 ): Promise<Fetched<T>> {
-  const rows: T[] = []
-  let total: number | undefined
-  let done = false
-  for (let p = 1; p <= maxPages && !done; p++) {
-    const r = await page(p)
-    rows.push(...r.rows)
-    total = metaTotal(r.meta) ?? total
-    done = r.rows.length < PAGE || (total !== undefined && rows.length >= total)
+  const first = await page(1)
+  const total = metaTotal(first.meta)
+  const batches: T[][] = [first.rows]
+  let reachedEnd = first.rows.length < PAGE
+  if (!reachedEnd && total !== undefined) {
+    const last = Math.min(maxPages, Math.ceil(total / PAGE))
+    for (let from = 2; from <= last; from += CONCURRENCY) {
+      const ps = Array.from({ length: Math.min(CONCURRENCY, last - from + 1) }, (_, i) => from + i)
+      batches.push(...(await Promise.all(ps.map(async (p) => (await page(p)).rows))))
+    }
+  } else if (!reachedEnd) {
+    for (let p = 2; p <= maxPages && !reachedEnd; p++) {
+      const r = await page(p)
+      batches.push(r.rows)
+      reachedEnd = r.rows.length < PAGE
+    }
   }
-  return { rows, total, partial: !done }
+  const seen = new Set<string>()
+  const rows = batches.flat().filter((r) => {
+    const id = idOf(r)
+    if (id === undefined) return true
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+  const partial = total !== undefined ? rows.length < total : !reachedEnd
+  return { rows, total, partial }
 }

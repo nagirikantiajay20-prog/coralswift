@@ -23,8 +23,10 @@ import { toAppError } from '@/services/api/errors'
 import { EnquiryStatusBadge, PriorityBadge } from '../components/EnquiryBadges'
 import { useEnquiryList } from '../hooks/useEnquiries'
 import {
+  DISCUSSION_TYPES,
   ENQUIRY_STATUSES,
   PRIORITIES,
+  type DiscussionType,
   type EnquiryListParams,
   type EnquiryRow,
   type EnquiryStatus,
@@ -58,6 +60,7 @@ export default function EnquiriesPage({
   const [type, setType] = useState<EnquiryType | 'all'>('all')
   const [status, setStatus] = useState<EnquiryStatus | 'all'>('all')
   const [priority, setPriority] = useState<Priority | 'all'>('all')
+  const [discussion, setDiscussion] = useState<DiscussionType | 'all'>('all')
   const [assign, setAssign] = useState<Assign>('all')
   const [attention, setAttention] = useState<Attention>('all')
   const [from, setFrom] = useState('')
@@ -82,6 +85,7 @@ export default function EnquiriesPage({
     assigned_user_id: assign === 'mine' ? user?.id : undefined,
     overdue: attention === 'overdue' ? true : undefined,
     sla_breached: attention === 'sla_breached' ? true : undefined,
+    discussion_type: scope === 'strategic' && discussion !== 'all' ? discussion : undefined,
     q: q || undefined,
     created_from: dayStart(from),
     created_to: dayEnd(to),
@@ -203,6 +207,17 @@ export default function EnquiriesPage({
               ...ENQUIRY_STATUSES.map((s) => ({ value: s, label: humanize(s) })),
             ]}
           />
+          {scope === 'strategic' && (
+            <FilterDropdown<DiscussionType | 'all'>
+              label="Discussion type"
+              value={discussion}
+              onChange={reset(setDiscussion)}
+              options={[
+                { value: 'all', label: 'All discussion types' },
+                ...DISCUSSION_TYPES.map((s) => ({ value: s, label: humanize(s) })),
+              ]}
+            />
+          )}
           <FilterDropdown<Priority | 'all'>
             label="Priority"
             value={priority}

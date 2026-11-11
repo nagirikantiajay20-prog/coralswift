@@ -36,7 +36,7 @@ import { Input, Label } from '@/components/ui/input'
 import { ROUTES } from '@/config/routes'
 import { ChartPanel, PendingBackend, QueryBody, RecentCard, type Q } from '../components/widgets'
 import { useDashboardData } from '../hooks/useDashboardData'
-import { PAGE_SIZE } from '../services/dashboardService'
+import { ROW_CAP } from '../services/dashboardService'
 import {
   countStatus,
   dailyCounts,
@@ -128,10 +128,10 @@ export default function DashboardPage() {
   const [to, setTo] = useState('')
   const d = useDashboardData({ from: dayStart(from), to: dayEnd(to) })
 
-  const enquiries = useMemo(() => d.enquiries.data ?? [], [d.enquiries.data])
+  const enquiries = useMemo(() => d.enquiries.data?.rows ?? [], [d.enquiries.data])
   // The applications endpoint has no date filter: the range is applied to the retrieved rows.
   const apps = useMemo(() => {
-    const all = d.applications.data ?? []
+    const all = d.applications.data?.rows ?? []
     if (!from && !to) return all
     return all.filter((a) => {
       const day = a.submitted_at?.slice(0, 10)
@@ -143,9 +143,9 @@ export default function DashboardPage() {
   const onboarding = countStatus(apps, 'pilot_onboarding')
   const followUps = upcomingFollowUps(enquiries)
   const truncated = [
-    enquiries.length >= PAGE_SIZE && 'enquiries',
-    (d.applications.data?.length ?? 0) >= PAGE_SIZE && 'applications',
-    (d.organizations.data?.length ?? 0) >= PAGE_SIZE && 'partners',
+    d.enquiries.data?.partial && 'enquiries',
+    d.applications.data?.partial && 'applications',
+    d.organizations.data?.partial && 'partners',
   ].filter(Boolean)
 
   return (
@@ -190,8 +190,8 @@ export default function DashboardPage() {
       </div>
       {truncated.length > 0 && (
         <p role="note" className="mb-4 text-xs text-muted">
-          Counts for {truncated.join(', ')} are based on the latest {PAGE_SIZE} records returned by
-          the API and may be incomplete.
+          Counts for {truncated.join(', ')} are incomplete: only the first {ROW_CAP} records were loaded (safety
+          limit), so counts and charts for these lists may be understated.
         </p>
       )}
 
@@ -219,7 +219,7 @@ export default function DashboardPage() {
           label="Active partners"
           icon={UsersRound}
           q={d.organizations}
-          value={d.organizations.data?.length}
+          value={d.organizations.data?.rows.length}
           hint="Active organizations"
         />
         <Stat

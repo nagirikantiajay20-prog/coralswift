@@ -9,6 +9,7 @@ import { SearchInput } from '@/components/common/SearchInput'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { ErrorState, LoadingState } from '@/components/common/states'
 import { Card } from '@/components/ui/card'
+import { useAccountMetrics } from '../hooks/useAccounts'
 import {
   formatDate,
   humanize,
@@ -23,6 +24,27 @@ import { AccountsDirectory } from '../components/AccountsDirectory'
 import { CAPABILITIES, inOnboarding } from '../utils/accounts'
 
 const PAGE_SIZE = 20
+/** Super administrator only: hidden when the backend refuses or returns nothing (never shown as zero). */
+function MetricsStrip() {
+  const m = useAccountMetrics().data
+  if (!m) return null
+  const items: [string, number][] = [
+    ['Total accounts', m.total_accounts],
+    ['Active partner accounts', m.active_partner_accounts],
+    ['Never logged in', m.accounts_never_logged_in],
+  ]
+  return (
+    <dl aria-label="Account metrics" className="mb-4 grid gap-3 sm:grid-cols-3">
+      {items.map(([k, v]) => (
+        <Card key={k} className="p-4">
+          <dt className="text-sm text-muted">{k}</dt>
+          <dd className="text-2xl font-semibold">{v}</dd>
+        </Card>
+      ))}
+    </dl>
+  )
+}
+
 export default function PartnerAccountsPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -85,6 +107,7 @@ export default function PartnerAccountsPage() {
         lists <b>partner organizations</b> so an authorised administrator can open one and provision
         access. Approval and onboarding never create an account automatically.
       </div>
+      <MetricsStrip />
       <AccountsDirectory />
 
       <Card className="mb-6">

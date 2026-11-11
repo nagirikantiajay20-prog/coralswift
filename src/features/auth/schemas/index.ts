@@ -9,8 +9,8 @@ export type LoginValues = z.infer<typeof loginSchema>
 export const forgotPasswordSchema = loginSchema.pick({ email: true })
 export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
 
-// ponytail: min length is a client-side placeholder; the backend documents no password policy (it only requires 1-256 chars).
-const password = z.string().min(8, 'Use at least 8 characters')
+// Backend password policy (GET /admin/security-policy, 2026-11): minimum 12 characters.
+const password = z.string().min(12, 'Use at least 12 characters')
 
 const matches = (v: { password: string; confirmPassword: string }) =>
   v.password === v.confirmPassword

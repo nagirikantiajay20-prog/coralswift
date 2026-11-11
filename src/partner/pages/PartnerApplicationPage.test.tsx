@@ -235,10 +235,54 @@ describe('PartnerApplicationPage', () => {
     expect(screen.getAllByText(/does not change your account access/)[0]).toBeInTheDocument()
   })
 
-  it('shows empty state when there is no application', async () => {
+  it('offers to start an application when none exists and creates it via POST', async () => {
     mockApi(routes({ '/api/v1/partner/applications': [] }))
+    const post = vi.spyOn(api, 'post').mockResolvedValue(ok(app('draft')) as never)
     renderPage()
-    expect(await screen.findByText('No application on record')).toBeInTheDocument()
+    const create = await screen.findByRole('button', { name: 'Create draft application' })
+    fireEvent.click(create)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a partner pathway')
+    expect(post).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: { value: 'vendor_subcontracting' },
+    })
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: ' Hello ' } })
+    fireEvent.click(create)
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith('/api/v1/partner/applications', {
+        pathway: 'vendor_subcontracting',
+        cover_note: 'Hello',
+      }),
+    )
+  })
+
+  it('creates with only the pathway when no cover note is given, and surfaces a backend rejection', async () => {
+    mockApi(routes({ '/api/v1/partner/applications': [] }))
+    const post = vi.spyOn(api, 'post').mockRejectedValue(new Error('already exists'))
+    renderPage()
+    await screen.findByRole('button', { name: 'Create draft application' })
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'direct_project_engagement' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create draft application' }))
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith('/api/v1/partner/applications', {
+        pathway: 'direct_project_engagement',
+        cover_note: undefined,
+      }),
+    )
+    // the form stays available so the partner can retry
+    expect(screen.getByRole('button', { name: 'Create draft application' })).toBeEnabled()
+  })
+
+  it('rejects an over-long cover note before calling the API', async () => {
+    mockApi(routes({ '/api/v1/partner/applications': [] }))
+    const post = vi.spyOn(api, 'post')
+    renderPage()
+    await screen.findByRole('button', { name: 'Create draft application' })
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'vendor_subcontracting' } })
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'x'.repeat(4001) } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create draft application' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Maximum 4000 characters')
+    expect(post).not.toHaveBeenCalled()
   })
 
   it('shows an error with retry when the application list fails (e.g. 403)', async () => {

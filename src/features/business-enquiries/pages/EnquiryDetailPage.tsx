@@ -15,6 +15,8 @@ import {
   shortId,
 } from '@/features/partner-applications/utils/format'
 import { toAppError } from '@/services/api/errors'
+import { EnquiryDocuments } from '../components/EnquiryDocuments'
+import { EnquiryActivity } from '../components/EnquiryActivity'
 import { EnquiryActions } from '../components/EnquiryActions'
 import { EnquiryStatusBadge, PriorityBadge } from '../components/EnquiryBadges'
 import { useEnquiryDetail, useEnquiryMutation } from '../hooks/useEnquiries'
@@ -214,7 +216,7 @@ export default function EnquiryDetailPage() {
             <EmptyState title="No project details recorded for this enquiry" />
           )}
           <h3 className="mb-1 mt-5 text-sm font-medium">Attachments</h3>
-          <Attachments id={e.id} docs={d.documents} />
+          <EnquiryDocuments id={e.id} />
         </Section>
         <Section title="D. Assignment information">
           <Fields
@@ -223,18 +225,17 @@ export default function EnquiryDetailPage() {
               ['Next follow-up', formatDate(e.next_follow_up_at)],
             ]}
           />
-          <p className="mt-3 text-xs text-muted">
-            Assignment date, assignee name and assignment history are not returned by the backend.
-          </p>
+          <p className="mt-3 text-xs text-muted">Assignment history is listed under section F.</p>
         </Section>
       </div>
       <div className="mt-4">
         <Section title="E. Notes, follow-ups and activity">
           <FollowUps d={d} />
-          <p className="mt-3 text-xs text-muted">
-            The backend returns follow-ups and notes only. Status-change, assignment and audit
-            history endpoints for enquiries do not exist yet.
-          </p>
+        </Section>
+      </div>
+      <div className="mt-4">
+        <Section title="F. Status and assignment history">
+          <EnquiryActivity id={e.id} />
         </Section>
       </div>
     </>

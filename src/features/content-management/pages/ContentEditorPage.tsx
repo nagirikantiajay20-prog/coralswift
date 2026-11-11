@@ -19,6 +19,7 @@ import {
   useAttach,
   useClaims,
   useContentAction,
+  useSchedule,
   useContentItem,
   useCreateContent,
   useUpdateContent,
@@ -321,6 +322,10 @@ function WorkflowPanel({
   role: Parameters<typeof actionsFor>[1]
 }) {
   const run = useContentAction(item.id)
+  const schedule = useSchedule(item.id)
+  const [when, setWhen] = useState('')
+  const whenIso = when ? new Date(when) : null
+  const whenInvalid = !whenIso || Number.isNaN(+whenIso)
   const [pending, setPending] = useState<WorkflowAction | null>(null)
   const [note, setNote] = useState('')
   const noteError = pending ? validateNote(pending, note) : null
@@ -339,6 +344,12 @@ function WorkflowPanel({
           </dd>
           <dt className="text-muted">Published</dt>
           <dd>{formatDateTime(item.published_at)}</dd>
+          {item.scheduled_publish_at && (
+            <>
+              <dt className="text-muted">Scheduled for</dt>
+              <dd>{formatDateTime(item.scheduled_publish_at)}</dd>
+            </>
+          )}
           <dt className="text-muted">Last reviewed</dt>
           <dd>{formatDateTime(item.last_reviewed_at)}</dd>
         </dl>
@@ -364,9 +375,36 @@ function WorkflowPanel({
             <p className="text-muted">No actions available for this status.</p>
           )}
         </div>
-        <p className="text-xs text-muted">
-          Every action is validated by the server. Scheduling is not supported by the backend.
-        </p>
+        {item.status === 'approved' && (
+          <div className="space-y-2 border-t border-line pt-3">
+            <FormField label="Schedule publication">
+              <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+            </FormField>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                disabled={blocked || whenInvalid || schedule.isPending}
+                onClick={() => whenIso && schedule.mutate(whenIso.toISOString())}
+              >
+                Schedule
+              </Button>
+              {item.scheduled_publish_at && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={schedule.isPending}
+                  onClick={() => schedule.mutate(null)}
+                >
+                  Cancel schedule
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted">
+              Requires approved content with cleared claims; the server rejects times in the past.
+            </p>
+          </div>
+        )}
+        <p className="text-xs text-muted">Every action is validated by the server.</p>
       </CardContent>
       <Dialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
         {pending && (

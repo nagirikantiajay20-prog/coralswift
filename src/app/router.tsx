@@ -13,6 +13,7 @@ import { ModuleRoute, ProtectedRoute } from '@/features/auth/components/guards'
 import ChangePasswordPage from '@/features/auth/pages/ChangePasswordPage'
 import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage'
 import LoginPage from '@/features/auth/pages/LoginPage'
+import PrivacyVerifyPage from '@/features/auth/pages/PrivacyVerifyPage'
 import ResetPasswordPage from '@/features/auth/pages/ResetPasswordPage'
 import {
   NotFoundPage,
@@ -81,11 +82,7 @@ const CommPreferences = lazy(() =>
     default: m.PreferencesPage,
   })),
 )
-const Notifications = lazy(() =>
-  import('@/features/communication/pages/UnavailablePages').then((m) => ({
-    default: m.NotificationsPage,
-  })),
-)
+const Notifications = lazy(() => import('@/features/communication/pages/NotificationsFeedPage'))
 const Website = lazy(() => import('@/features/content-management/pages/WebsiteDashboardPage'))
 const WebsitePages = lazy(() => import('@/features/content-management/pages/WebsitePagesPage'))
 const ContentEditor = lazy(() => import('@/features/content-management/pages/ContentEditorPage'))
@@ -147,6 +144,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.login, element: <LoginPage /> },
       { path: ROUTES.forgotPassword, element: <ForgotPasswordPage /> },
       { path: ROUTES.resetPassword, element: <ResetPasswordPage /> },
+      { path: ROUTES.privacyVerify, element: <PrivacyVerifyPage /> },
       { path: ROUTES.unauthorized, element: <UnauthorizedPage /> },
       { path: ROUTES.sessionExpired, element: <SessionExpiredPage /> },
     ],

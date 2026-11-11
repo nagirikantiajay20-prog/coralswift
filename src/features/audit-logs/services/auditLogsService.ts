@@ -1,5 +1,6 @@
 import { accountEndpoints } from '@/config/endpoints'
 import { api } from '@/services/api/client'
+import { downloadCsv } from '@/services/api/csv'
 import type { ApiList, AuditFilters, AuditRowRaw } from '../types'
 
 export const PAGE_SIZE = 20
@@ -20,6 +21,19 @@ export const auditLogsService = {
     })
     return { rows: data.data ?? [], meta: data.meta }
   },
+  /** GET /admin/audit/{id}: one event (super administrator). */
+  get: async (id: string) =>
+    (await api.get<{ data: AuditRowRaw }>(`${accountEndpoints.audit}/${id}`)).data.data,
+  /** GET /admin/audit/actions: distinct actions present in the log. */
+  actions: async () =>
+    (await api.get<{ data: string[] | null }>(accountEndpoints.auditActions)).data.data ?? [],
+  /** Formula-safe CSV of the filtered log (super administrator); same filters as the list. */
+  exportCsv: (f: AuditFilters) =>
+    downloadCsv(
+      accountEndpoints.auditCsv,
+      params(f) as Record<string, string | undefined>,
+      `coralswift-audit-${new Date().toISOString().slice(0, 10)}.csv`,
+    ),
   /** Exact count via `meta.total` of a 1-row query; undefined when the backend omits it. */
   count: async (f: Partial<AuditFilters>) => {
     const { data } = await api.get<ApiList<AuditRowRaw>>(accountEndpoints.audit, {

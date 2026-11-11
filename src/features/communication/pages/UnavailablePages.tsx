@@ -1,4 +1,4 @@
-import { BellOff, MailX, SlidersHorizontal, type LucideIcon } from 'lucide-react'
+import { MailX, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/states'
@@ -50,17 +50,6 @@ export function EmailsPage() {
         ['Track email delivery', '/admin/communications/delivery'],
         ['Edit email templates', '/admin/communications/templates'],
       ]}
-    />
-  )
-}
-
-export function NotificationsPage() {
-  return (
-    <Unavailable
-      title="Notifications"
-      icon={BellOff}
-      missing="The API has no admin notification feed (no list, read/unread, archive or delete). GET /admin/notifications is the email outbox, so it is shown under Delivery tracking, not as notifications. Nothing is fabricated."
-      instead={[['Email delivery tracking', '/admin/communications/delivery']]}
     />
   )
 }

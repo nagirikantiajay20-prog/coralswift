@@ -30,3 +30,25 @@ export const useAccountAction = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['partners', 'accounts'] }),
   })
 }
+
+export const useAccountMetrics = () =>
+  useQuery({
+    queryKey: ['partners', 'account-metrics'],
+    queryFn: partnerAccountsService.metrics,
+    retry: false,
+  })
+
+export const useOrgAccounts = (orgId: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ['partners', 'org-accounts', orgId],
+    queryFn: () => partnerAccountsService.ofOrganization(orgId),
+    enabled,
+    retry: false,
+  })
+
+export const useAccountDetail = (userId: string) =>
+  useQuery({
+    queryKey: ['partners', 'account-detail', userId],
+    queryFn: () => partnerAccountsService.detail(userId),
+    retry: false,
+  })

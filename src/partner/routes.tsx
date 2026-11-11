@@ -4,7 +4,6 @@ import ResetPasswordPage from '@/features/auth/pages/ResetPasswordPage'
 import { NotFoundPage } from '@/features/auth/pages/StatusPages'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { PartnerRoute } from './components/PartnerRoute'
-import type { PartnerModuleKey } from './config/modules'
 import { PARTNER_ROUTES as R } from './config/routes'
 import { PartnerLayout } from './layouts/PartnerLayout'
 import PartnerApplicationPage from './pages/PartnerApplicationPage'
@@ -17,7 +16,6 @@ import PartnerActivatePage from './pages/PartnerActivatePage'
 import PartnerLoginPage from './pages/PartnerLoginPage'
 import PartnerProjectsPage from './pages/PartnerProjectsPage'
 import PartnerPerformancePage from './pages/PartnerPerformancePage'
-import PartnerModulePage from './pages/PartnerModulePage'
 import PartnerMessagesPage from './pages/PartnerMessagesPage'
 import PartnerMeetingsPage from './pages/PartnerMeetingsPage'
 import PartnerTeamPage from './pages/PartnerTeamPage'
@@ -25,12 +23,8 @@ import PartnerFollowUpsPage from './pages/PartnerFollowUpsPage'
 import PartnerSettingsPage, { PartnerAccountSection } from './pages/PartnerSettingsPage'
 import PartnerSecurityPage from './pages/PartnerSecurityPage'
 import PartnerPrivacyPage from './pages/PartnerPrivacyPage'
+import PartnerEnquiriesPage from './pages/PartnerEnquiriesPage'
 import PartnerNotificationsPage from './pages/PartnerNotificationsPage'
-
-const page = (path: string, module: PartnerModuleKey): RouteObject => ({
-  path,
-  element: <PartnerModulePage module={module} />,
-})
 
 /**
  * /partner/*: public auth pages (AuthLayout) and a guarded portal shell. Guards are UX only; the
@@ -67,7 +61,7 @@ export const partnerRoutes: RouteObject = {
             { path: 'meetings', element: <PartnerMeetingsPage /> },
             { path: 'follow-ups', element: <PartnerFollowUpsPage /> },
             { path: 'notifications', element: <PartnerNotificationsPage /> },
-            page('enquiries', 'enquiries'),
+            { path: 'enquiries', element: <PartnerEnquiriesPage /> },
             { path: 'profile-changes', element: <PartnerProfileChangesPage /> },
             { path: 'team', element: <PartnerTeamPage /> },
             {

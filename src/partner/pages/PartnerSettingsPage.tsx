@@ -2,6 +2,7 @@ import { Bell, LifeBuoy } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/authStore'
+import { ProfileEditor } from '@/features/auth/components/ProfileEditor'
 import { Panel } from '../components/Panel'
 import { PARTNER_ROUTES as R } from '../config/routes'
 
@@ -51,15 +52,8 @@ export function PartnerAccountSection() {
   return (
     <div className="space-y-4">
       <Panel title="Account information">
-        <dl className="grid gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-muted">Full name</dt>
-            <dd>{p?.name ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">Email address</dt>
-            <dd>{p?.email ?? '—'}</dd>
-          </div>
+        <ProfileEditor />
+        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-muted">Organization</dt>
             <dd>{p?.organizationName ?? '—'}</dd>
@@ -70,8 +64,8 @@ export function PartnerAccountSection() {
           </div>
         </dl>
         <p className="mt-4 text-sm text-muted">
-          Personal details cannot be changed here: the backend offers no endpoint for it. To correct
-          them, submit a data correction request under{' '}
+          Your name and phone can be changed above. To correct other personal data, submit a data
+          correction request under{' '}
           <Link className="underline" to={R.settingsPrivacy}>
             Privacy &amp; data
           </Link>

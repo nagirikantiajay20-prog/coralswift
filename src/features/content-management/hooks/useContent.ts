@@ -95,6 +95,19 @@ export function useContentAction(id: string) {
   })
 }
 
+export function useSchedule(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (publishAt: string | null) =>
+      publishAt ? svc.schedule(id, publishAt) : svc.cancelSchedule(id),
+    onSuccess: (_i, publishAt) => {
+      toast.success(publishAt ? 'Publication scheduled.' : 'Schedule cancelled.')
+      void qc.invalidateQueries({ queryKey: ['cms'] })
+    },
+    onError,
+  })
+}
+
 export function useAttach(id: string) {
   const qc = useQueryClient()
   return useMutation({

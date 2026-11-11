@@ -1,11 +1,11 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Select } from '@/components/ui/input'
 import { toAppError } from '@/services/api/errors'
 import { useAuthStore } from '@/store/authStore'
-import { Panel } from '../components/Panel'
+import { Async, human, Panel, when } from '../components/Panel'
 import { partnerSettingsService as s, type PrivacyKind } from '../services/partnerSettingsService'
 
 const KINDS: Record<PrivacyKind, string> = {
@@ -15,18 +15,25 @@ const KINDS: Record<PrivacyKind, string> = {
 }
 
 /**
- * POST /privacy/requests (public; email, kind, details). No list/status endpoint exists, so only
- * the confirmation returned at submission is shown. The request goes to Coral Swift staff; nothing
- * is deleted or exported by the frontend, and legal/audit retention is applied by staff.
+ * POST/GET /partner/privacy-requests (authenticated; identity comes from the session). The request
+ * goes to Coral Swift staff; nothing is deleted or exported by the frontend, and legal/audit
+ * retention is applied by staff.
  */
 export default function PartnerPrivacyPage() {
   const email = useAuthStore((st) => st.partner?.email) ?? ''
   const [kind, setKind] = useState<PrivacyKind>('access')
   const [details, setDetails] = useState('')
   const [ask, setAsk] = useState(false)
+  const pid = useAuthStore((st) => st.partner?.id)
+  const qc = useQueryClient()
+  const key = ['partner', pid, 'privacy-requests']
+  const list = useQuery({ queryKey: key, queryFn: s.privacyRequests, enabled: !!pid, retry: 1 })
   const m = useMutation({
-    mutationFn: () => s.submitPrivacyRequest({ email, kind, details: details.trim() || undefined }),
-    onSuccess: () => setDetails(''),
+    mutationFn: () => s.submitPrivacyRequest({ kind, details: details.trim() || undefined }),
+    onSuccess: () => {
+      setDetails('')
+      void qc.invalidateQueries({ queryKey: key })
+    },
   })
   const ref = m.data?.reference
   return (
@@ -83,14 +90,34 @@ export default function PartnerPrivacyPage() {
           )}
           {m.isSuccess && (
             <p role="status" className="text-sm text-emerald-800">
-              Request received{ref ? `. Reference: ${ref}` : ''}. Keep it for follow-up; request
-              status is not viewable here.
+              Request received{ref ? `. Reference: ${ref}` : ''}. You can follow its status below.
             </p>
           )}
           <Button type="submit" disabled={!email || m.isPending}>
             {m.isPending ? 'Submitting…' : 'Submit request'}
           </Button>
         </form>
+      </Panel>
+      <Panel title="Your requests">
+        <Async q={list}>
+          {!(list.data ?? []).length ? (
+            <p className="text-sm text-muted">You have not submitted any requests.</p>
+          ) : (
+            <ul className="divide-y divide-line text-sm">
+              {(list.data ?? []).map((r) => (
+                <li key={r.reference} className="py-2">
+                  <p className="font-medium">
+                    {KINDS[r.kind] ?? human(r.kind)} · {human(r.status)}
+                  </p>
+                  <p className="text-muted">
+                    {r.reference} · {when(r.created_at)}
+                  </p>
+                  {r.resolution_note && <p className="mt-1">{r.resolution_note}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Async>
       </Panel>
       <ConfirmDialog
         open={ask}

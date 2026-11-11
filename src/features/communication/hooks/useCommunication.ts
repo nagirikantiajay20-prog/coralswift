@@ -25,6 +25,14 @@ export const useOutboxTotal = (status: DeliveryStatus) =>
 export const useTemplates = () =>
   useQuery({ queryKey: ['comms', 'templates'], queryFn: svc.templates, retry: false })
 
+export const usePlaceholders = () =>
+  useQuery({
+    queryKey: ['comms', 'placeholders'],
+    queryFn: svc.placeholders,
+    retry: false,
+    staleTime: Infinity,
+  })
+
 const onError = (e: unknown) => toast.error(toAppError(e).message)
 
 export function useRetry() {

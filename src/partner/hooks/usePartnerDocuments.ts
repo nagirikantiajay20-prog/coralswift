@@ -21,6 +21,11 @@ export function usePartnerDocuments() {
     queryFn: dash.applications,
     ...o,
   })
+  const docRequests = useQuery({
+    queryKey: ['partner', pid, 'document-requests'],
+    queryFn: () => svc.documentRequests('open'),
+    ...o,
+  })
   const app = latestApplication(applications.data)
   const messages = useQuery({
     queryKey: ['partner', pid, 'messages', app?.id],
@@ -31,6 +36,7 @@ export function usePartnerDocuments() {
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['partner', pid, 'documents'] })
     void qc.invalidateQueries({ queryKey: ['partner', pid, 'messages'] })
+    void qc.invalidateQueries({ queryKey: ['partner', pid, 'document-requests'] })
     void qc.invalidateQueries({ queryKey: ['partner', pid, 'applications'] })
   }
   const remove = useMutation({
@@ -50,7 +56,7 @@ export function usePartnerDocuments() {
     },
     onError: () => toast.error('Your response could not be sent. Try again.'),
   })
-  return { documents, applications, app, messages, remove, respond, refresh }
+  return { documents, docRequests, applications, app, messages, remove, respond, refresh }
 }
 
 export function useDocumentHistory(id: string | undefined) {

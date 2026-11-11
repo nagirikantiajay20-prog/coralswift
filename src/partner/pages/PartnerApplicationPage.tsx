@@ -1,8 +1,10 @@
-import { CheckCircle2, Circle, CircleDashed, PauseCircle, Send } from 'lucide-react'
+import { CheckCircle2, Circle, CircleDashed, PauseCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { EmptyState, ErrorState } from '@/components/common/states'
+import { ErrorState } from '@/components/common/states'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { useAuthStore } from '@/store/authStore'
+import { StartApplication } from '../components/StartApplication'
+import { ApplicationActions } from '../components/ApplicationActions'
 import { RequestCard } from '../components/RequestCard'
 import { Async, day, errText, human, Panel, when } from '../components/Panel'
 import { PARTNER_ROUTES as R } from '../config/routes'
@@ -46,13 +48,7 @@ export default function PartnerApplicationPage() {
       <ErrorState message={errText(applications.error)} onRetry={() => applications.refetch()} />
     )
   if (!app)
-    return (
-      <EmptyState
-        title="No application on record"
-        description="When your partner application is created it will appear here."
-        icon={Send}
-      />
-    )
+    return <StartApplication />
 
   const info = statusInfo(app.status)
   const hist = [...(history.data ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))
@@ -110,6 +106,8 @@ export default function PartnerApplicationPage() {
             : info.next || 'No action needed.'}
         </p>
       </Panel>
+
+      <ApplicationActions key={app.id + app.status} app={app} />
 
       {decision && (
         <Panel title="Decision">

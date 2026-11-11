@@ -1,11 +1,12 @@
 import { ArrowLeft } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/common/PageHeader'
 import { StatusBadge } from '@/components/common/StatusBadge'
-import { EmptyState } from '@/components/common/states'
+import { EmptyState, ErrorState, LoadingState } from '@/components/common/states'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDateTime, humanize } from '@/features/partner-applications/utils/format'
-import { useActorNames } from '../hooks/useAudit'
+import { toAppError } from '@/services/api/errors'
+import { useActorNames, useAuditEvent } from '../hooks/useAudit'
 import type { AuditEntry } from '../types'
 
 const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
@@ -16,11 +17,14 @@ const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
 )
 
 /**
- * The backend has no get-by-id endpoint, so the (already sanitised) event is passed from the list via
- * router state. Opening the URL cold shows how to reach the event instead of fabricating it.
+ * The event comes from list router state when available, otherwise from GET /admin/audit/{id}
+ * (deep link / reload). Both paths go through toEntry, so redaction and restriction always apply.
  */
 export default function AuditLogDetailPage() {
-  const entry = (useLocation().state as { entry?: AuditEntry } | null)?.entry
+  const stateEntry = (useLocation().state as { entry?: AuditEntry } | null)?.entry
+  const { id } = useParams()
+  const fetched = useAuditEvent(id, !stateEntry)
+  const entry = stateEntry ?? fetched.data
   const { name } = useActorNames()
   const back = (
     <Link to="/admin/audit-logs" className="inline-flex items-center gap-1 text-sm text-coral-ink">
@@ -32,11 +36,20 @@ export default function AuditLogDetailPage() {
       <>
         <PageHeader title="Audit event" />
         <Card>
-          <EmptyState
-            title="Event not loaded"
-            description="The backend cannot fetch a single audit event by id. Open it from the audit log list."
-            action={back}
-          />
+          {fetched.isLoading ? (
+            <LoadingState label="Loading audit event…" />
+          ) : fetched.isError ? (
+            <ErrorState
+              message={
+                toAppError(fetched.error).status === 404
+                  ? 'This audit event was not found.'
+                  : toAppError(fetched.error).message
+              }
+              onRetry={() => void fetched.refetch()}
+            />
+          ) : (
+            <EmptyState title="Event not loaded" action={back} />
+          )}
         </Card>
       </>
     )
@@ -82,7 +95,7 @@ export default function AuditLogDetailPage() {
           <CardContent>
             <dl className="divide-y divide-line">
               <Row k="Actor type" v={<StatusBadge label={humanize(entry.actorType)} />} />
-              <Row k="Administrator" v={name(entry.actorUserId)} />
+              <Row k="Administrator" v={entry.actorName ?? name(entry.actorUserId)} />
               <Row k="User id" v={entry.actorUserId} />
             </dl>
           </CardContent>

@@ -11,6 +11,7 @@ import { Input, Label } from '@/components/ui/input'
 import { humanize } from '@/features/partner-applications/utils/format'
 import { toAppError } from '@/services/api/errors'
 import {
+  usePlaceholders,
   usePreview,
   useRevertTemplate,
   useSaveTemplate,
@@ -29,6 +30,7 @@ function EditDialog({ tpl, onClose }: { tpl: Template; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const save = useSaveTemplate()
   const preview = usePreview()
+  const names = (usePlaceholders().data ?? []).map((p) => p.name)
 
   const parse = (): TemplateBody | null => {
     const r = templateSchema.safeParse({ subject, text_body: text, html_body: html })
@@ -44,7 +46,7 @@ function EditDialog({ tpl, onClose }: { tpl: Template; onClose: () => void }) {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         title={`Edit template: ${humanize(tpl.key)}`}
-        description="Placeholders are validated by the backend on preview and save; none are assumed here. Previewing sends no email."
+        description={`Placeholders are validated by the backend on preview and save. ${names.length ? `Accepted: ${names.join(', ')}. ` : ''}Previewing sends no email.`}
         footer={
           <>
             <DialogClose asChild>

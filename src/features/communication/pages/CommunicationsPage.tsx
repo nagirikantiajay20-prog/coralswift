@@ -4,7 +4,9 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { StatCard } from '@/components/common/StatCard'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { Card } from '@/components/ui/card'
+import { useQuery } from '@tanstack/react-query'
 import { useOutboxTotal } from '../hooks/useCommunication'
+import { communicationService } from '../services/communicationService'
 import type { DeliveryStatus } from '../types'
 import { CAPABILITIES } from '../utils/communication'
 
@@ -30,6 +32,29 @@ function Metric({ status, label, hint, icon }: (typeof METRICS)[number]) {
       error={q.isError}
       value={q.data ?? undefined}
       hint={q.data === null ? 'Unavailable: backend sent no total' : hint}
+    />
+  )
+}
+
+function UnreadFeed() {
+  const q = useQuery({
+    queryKey: ['comms', 'feed', 'unread-count'],
+    queryFn: () => communicationService.feed({ unread: true, page: 1, page_size: 1 }),
+    retry: false,
+  })
+  const n = q.data?.meta?.unread
+  return (
+    <StatCard
+      label="Unread admin notifications"
+      icon={Inbox}
+      loading={q.isPending}
+      error={q.isError}
+      value={typeof n === 'number' ? n : undefined}
+      hint={
+        q.data && typeof n !== 'number'
+          ? 'Unavailable: backend sent no unread count'
+          : 'Your own feed'
+      }
     />
   )
 }
@@ -65,7 +90,7 @@ const LINKS = [
     'Override, preview and revert built-in templates',
   ],
   ['Email composer', '/admin/communications/emails', 'Not available: no send endpoint'],
-  ['Notification center', '/admin/notifications', 'Not available: no notification feed'],
+  ['Notification center', '/admin/notifications', 'Your feed: read, archive, mark all read'],
   ['Preferences', '/admin/communications/preferences', 'Not available: no preferences endpoint'],
 ] as const
 
@@ -86,11 +111,7 @@ export default function CommunicationsPage() {
           icon={MailCheck}
           hint="Unavailable: no delivery receipts"
         />
-        <StatCard
-          label="Unread admin notifications"
-          icon={Inbox}
-          hint="Unavailable: no notification feed"
-        />
+        <UnreadFeed />
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

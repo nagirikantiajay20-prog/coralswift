@@ -18,6 +18,13 @@ import type { AccountRow } from '../types'
 const SIZE = 20
 const TONE = { active: 'success', invited: 'warning', deactivated: 'neutral' } as const
 
+const DELIVERY_TONE: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> = {
+  sent: 'success',
+  logged: 'neutral',
+  pending: 'warning',
+  failed: 'danger',
+}
+
 const baseColumns: Column<AccountRow>[] = [
   { header: 'Name', cell: (r) => <span className="font-medium">{r.full_name}</span> },
   { header: 'Email', cell: (r) => r.email },
@@ -27,6 +34,25 @@ const baseColumns: Column<AccountRow>[] = [
     cell: (r) => <StatusBadge label={humanize(r.status)} tone={TONE[r.status] ?? 'neutral'} />,
   },
   { header: 'Invitation', cell: (r) => humanize(r.invitation_state) },
+  {
+    header: 'Invitation email',
+    cell: (r) =>
+      r.invitation_delivery_status ? (
+        <span title="Email delivery only; the account is active once the partner sets a password.">
+          <StatusBadge
+            label={humanize(r.invitation_delivery_status)}
+            tone={DELIVERY_TONE[r.invitation_delivery_status] ?? 'neutral'}
+          />
+          {r.invitation_delivery_at && (
+            <span className="ml-2 text-xs text-muted">
+              {formatDateTime(r.invitation_delivery_at)}
+            </span>
+          )}
+        </span>
+      ) : (
+        '—'
+      ),
+  },
   { header: 'MFA', cell: (r) => (r.mfa_enabled ? 'On' : 'Off') },
   {
     header: 'Last login',

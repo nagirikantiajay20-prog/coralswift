@@ -48,6 +48,8 @@ export interface ReviewerApplication {
   assigned_reviewer_id: string | null
   submission_count: number
   submitted_at: string | null
+  /** Server-computed legal next stages (live 2026-11-10); absent on older responses. */
+  allowed_next?: PortalStatus[]
 }
 
 export interface Organization {
@@ -146,7 +148,7 @@ export interface AuditItem {
 }
 export interface Reviewer {
   id: string
-  email: string
+  email?: string
   full_name: string
   staff_role: string
   status: string
@@ -174,4 +176,13 @@ export interface ListParams {
   unassigned?: boolean
   page: number
   page_size: number
+}
+
+/** GET /reviewer/transitions: every status change a reviewer may make, with its requirements. */
+export interface TransitionRule {
+  from: string
+  to: string
+  needs_reason: boolean
+  needs_assigned_reviewer: boolean
+  dedicated_endpoint: boolean
 }

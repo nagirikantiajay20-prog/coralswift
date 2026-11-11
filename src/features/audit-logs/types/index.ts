@@ -14,6 +14,9 @@ export interface AuditRowRaw {
   request_id: string | null
   meta: Record<string, unknown> | null
   created_at: string
+  /** Server-resolved actor name and strategic flag (2026-11 contract); absent on older payloads. */
+  actor_name?: string | null
+  is_strategic?: boolean
 }
 
 /** Sanitised view model. Secrets are redacted at mapping time; restricted rows carry no content. */
@@ -25,6 +28,7 @@ export interface AuditEntry {
   recordId: string
   actorType: string
   actorUserId: string | null
+  actorName: string | null
   organizationId: string | null
   requestId: string | null
   meta: Record<string, unknown>

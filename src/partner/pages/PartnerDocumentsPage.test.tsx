@@ -31,11 +31,15 @@ const ver = (o: object = {}) => ({
   uploaded_at: '2026-11-02T00:00:00Z',
   ...o,
 })
-const doc = (id: string, category: string, v: object | null) => ({
+const doc = (id: string, category: string, v: object | null, flags: object = {}) => ({
   id,
   category,
   status: 'active',
   current_version: v === null ? null : ver(v),
+  can_replace: !(v && (v as { review_status?: string }).review_status === 'accepted'),
+  can_remove: !(v && (v as { review_status?: string }).review_status === 'accepted'),
+  can_download: true,
+  ...flags,
 })
 const APP = {
   id: 'a1',
@@ -171,6 +175,26 @@ describe('PartnerDocumentsPage', () => {
     expect(within(accepted).queryByRole('button', { name: 'Remove' })).toBeNull()
     const rejected = screen.getByText('Operating history evidence').closest('li')!
     expect(within(rejected).getByRole('button', { name: 'Upload replacement' })).toBeInTheDocument()
+  })
+
+  it('shows document actions only as the backend permits (can_replace/can_remove/can_download)', async () => {
+    routes = {
+      ...base(),
+      '/api/v1/partner/documents': [
+        doc(
+          'd3',
+          'service_portfolio',
+          {},
+          { can_replace: false, can_remove: false, can_download: false },
+        ),
+      ],
+    }
+    mockGet()
+    renderPage()
+    await screen.findByText('Company standing')
+    const li = screen.getByText('Service portfolio').closest('li')!
+    for (const n of ['Replace', 'Remove', 'Download', 'Upload replacement'])
+      expect(within(li).queryByRole('button', { name: n })).toBeNull()
   })
 
   it('shows empty and error states', async () => {

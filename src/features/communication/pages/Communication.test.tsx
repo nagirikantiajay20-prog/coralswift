@@ -14,7 +14,8 @@ import {
 } from '../utils/communication'
 import CommunicationsPage from './CommunicationsPage'
 import DeliveryPage from './DeliveryPage'
-import { EmailsPage, NotificationsPage } from './UnavailablePages'
+import NotificationsFeedPage from './NotificationsFeedPage'
+import { EmailsPage } from './UnavailablePages'
 
 const wrap = (ui: React.ReactNode) =>
   render(
@@ -96,7 +97,6 @@ it('capability matrix lists no feed, send, preferences or history support', () =
   const missing = CAPABILITIES.filter((c) => c.support === 'missing')
     .map((c) => c.operation)
     .join('|')
-  expect(missing).toMatch(/notification feed/)
   expect(missing).toMatch(/ad-hoc email/)
   expect(missing).toMatch(/preferences/)
   expect(missing).toMatch(/communication history/)
@@ -137,15 +137,39 @@ describe('pages', () => {
   it('dashboard shows em dash when totals are missing and marks unavailable metrics', async () => {
     setRole('super_administrator')
     vi.spyOn(svc, 'outbox').mockResolvedValue({ rows: [], meta: null })
+    vi.spyOn(svc, 'feed').mockResolvedValue({ rows: [], meta: { unread: 4 } })
     wrap(<CommunicationsPage />)
     expect(await screen.findByText('Unavailable: no delivery receipts')).toBeInTheDocument()
-    expect(screen.getByText('Unavailable: no notification feed')).toBeInTheDocument()
+    expect(await screen.findByText('Unread admin notifications')).toBeInTheDocument()
+    expect(await screen.findByText('4')).toBeInTheDocument()
   })
-  it('email and notification pages are explicit unavailable states with no send control', () => {
+  it('email page is an explicit unavailable state with no send control', () => {
     wrap(<EmailsPage />)
     expect(screen.getByText(/does not support this yet/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /send/i })).toBeNull()
-    wrap(<NotificationsPage />)
-    expect(screen.getAllByText(/does not support this yet/)).toHaveLength(2)
+  })
+})
+
+describe('notifications feed', () => {
+  it('lists own items, marks one read and refreshes', async () => {
+    const item = {
+      id: 'f1',
+      kind: 'enquiry_assigned',
+      title: 'New enquiry assigned',
+      record_type: 'enquiry',
+      record_id: 'r1',
+      is_strategic: false,
+      created_at: '2026-01-01T00:00:00Z',
+      read_at: null,
+      is_read: false,
+      archived_at: null,
+    }
+    vi.spyOn(svc, 'feed').mockResolvedValue({ rows: [item], meta: { unread: 1, pages: 1 } })
+    const read = vi.spyOn(svc, 'feedRead').mockResolvedValue({} as never)
+    wrap(<NotificationsFeedPage />)
+    expect(await screen.findByText('New enquiry assigned')).toBeInTheDocument()
+    expect(screen.getByText('1 unread')).toBeInTheDocument()
+    screen.getByRole('button', { name: 'Mark read' }).click()
+    await vi.waitFor(() => expect(read.mock.calls[0]?.[0]).toBe('f1'))
   })
 })

@@ -7,6 +7,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FormField } from '@/components/forms/FormField'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
+import { devLogin } from '@/config/env'
 import { ROUTES } from '@/config/routes'
 import { toAppError } from '@/services/api/errors'
 import { useAuthStore } from '@/store/authStore'
@@ -30,7 +31,10 @@ function useDestination() {
 
 function CredentialsForm({ onDone }: { onDone: () => void }) {
   const [show, setShow] = useState(false)
-  const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema) })
+  const form = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: devLogin('ADMIN'),
+  })
   const { errors } = form.formState
   const login = useMutation({ mutationFn: authService.login, onSuccess: onDone })
 

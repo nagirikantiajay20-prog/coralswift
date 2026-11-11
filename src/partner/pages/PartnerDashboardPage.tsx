@@ -385,7 +385,7 @@ export default function PartnerDashboardPage() {
                         {kind ? ` · ${human(kind)}` : ''}
                       </span>
                       <span className="text-muted">
-                        {[field(e, ['status']), date(field(e, ['created_at']))]
+                        {[field(e, ['status']), date(field(e, ['submitted_at', 'created_at']))]
                           .filter(Boolean)
                           .join(' · ')}
                       </span>

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import type { Fetched } from '@/features/reports/utils/aggregate'
 import { dashboardService } from '../services/dashboardService'
 import type { DateRange, EnquiryRow } from '../types'
 
@@ -21,8 +22,10 @@ export function useDashboardData(range: DateRange) {
     queryFn: () => dashboardService.enquiries(range),
     enabled: access.enquiries,
     // Strategic/M&A rows never feed dashboard metrics for roles without strategic access.
-    select: (rows: EnquiryRow[]) =>
-      can('strategicEnquiries') ? rows : rows.filter((r) => r.enquiry_type !== 'strategic'),
+    select: (f: Fetched<EnquiryRow>) =>
+      can('strategicEnquiries')
+        ? f
+        : { ...f, rows: f.rows.filter((r) => r.enquiry_type !== 'strategic') },
     ...o,
   })
   const applications = useQuery({

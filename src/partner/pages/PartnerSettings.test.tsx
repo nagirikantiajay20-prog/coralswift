@@ -51,13 +51,15 @@ afterEach(() => {
 })
 
 describe('Phase 35 settings', () => {
-  it('shows read-only account info, no calls, and a nav entry', () => {
-    const spies = (['get', 'post', 'put', 'patch', 'delete'] as const).map((m) => vi.spyOn(api, m))
+  it('shows account info with an editable name and phone, and a nav entry', async () => {
+    const get = vi
+      .spyOn(api, 'get')
+      .mockResolvedValue(env({ id: 'p1', email: 'p@x.test', full_name: 'Pat', phone: null }))
     view('/partner/settings')
-    expect(screen.getByText('p@x.test')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('p@x.test')).toBeInTheDocument()
     expect(screen.getByText('Acme')).toBeInTheDocument()
-    expect(screen.queryByRole('textbox')).toBeNull()
-    spies.forEach((s) => expect(s).not.toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByLabelText('Full name')).toHaveValue('Pat'))
+    expect(get).toHaveBeenCalledWith('/api/v1/auth/me')
     expect(PARTNER_NAVIGATION.map((n) => n.to)).toContain('/partner/settings')
   })
 
@@ -138,13 +140,13 @@ describe('Phase 35 settings', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 
-  it('privacy: access request posts with the account email; deletion needs confirmation', async () => {
+  it('privacy: access request posts to the partner endpoint; deletion needs confirmation', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue(env([]))
     const post = vi.spyOn(api, 'post').mockResolvedValue(env({ reference: 'PR-1' }))
     view('/partner/settings/privacy')
     fireEvent.click(screen.getByRole('button', { name: 'Submit request' }))
     await screen.findByText(/PR-1/)
-    expect(post).toHaveBeenCalledWith('/api/v1/privacy/requests', {
-      email: 'p@x.test',
+    expect(post).toHaveBeenCalledWith('/api/v1/partner/privacy-requests', {
       kind: 'access',
       details: undefined,
     })

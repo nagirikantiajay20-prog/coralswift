@@ -21,7 +21,7 @@ import {
   type NoteForm,
   type TransitionForm,
 } from '../schemas'
-import { useAppMutation, useReviewers } from '../hooks/useApplications'
+import { useAppMutation, useReviewers, useTransitionRules } from '../hooks/useApplications'
 import { partnerApplicationsService as svc } from '../services/partnerApplicationsService'
 import {
   DOC_CATEGORIES,
@@ -350,8 +350,17 @@ function StageDialog({ app, onClose }: { app: ReviewerApplication; onClose: () =
     'Stage updated',
     onClose,
   )
-  const submit = (v: TransitionForm) =>
-    DECISION_STATUSES.includes(v.to_status) ? setPending(v) : m.mutate(v)
+  const rules = useTransitionRules().data
+  const submit = (v: TransitionForm) => {
+    // Backend rules (GET /reviewer/transitions) add to the built-in decision rule; absent -> built-in only.
+    const rule = rules?.find((r) => r.from === app.status && r.to === v.to_status)
+    if (rule?.needs_reason && !v.reason)
+      return f.setError('reason', { message: 'A reason is required for this change' })
+    if (rule?.needs_assigned_reviewer && !app.assigned_reviewer_id)
+      return f.setError('to_status', { message: 'Assign a reviewer before this change' })
+    if (DECISION_STATUSES.includes(v.to_status)) setPending(v)
+    else m.mutate(v)
+  }
   const target = pending?.to_status as PortalStatus | undefined
   return (
     <>
@@ -359,7 +368,7 @@ function StageDialog({ app, onClose }: { app: ReviewerApplication; onClose: () =
         open
         onOpenChange={(o) => !o && onClose()}
         title="Change application stage"
-        description="The backend validates whether the move is permitted and returns an error if not."
+        description="Only moves the backend permits from the current stage are listed."
         formId="stage-form"
         submitLabel="Continue"
         busy={m.isPending}
@@ -368,11 +377,13 @@ function StageDialog({ app, onClose }: { app: ReviewerApplication; onClose: () =
           <FormField label="New stage" error={f.formState.errors.to_status?.message}>
             <Select {...f.register('to_status')}>
               <option value="">Select a stage</option>
-              {REVIEWER_TARGETS.filter((s) => s !== app.status).map((s) => (
-                <option key={s} value={s}>
-                  {humanize(s)}
-                </option>
-              ))}
+              {(app.allowed_next?.length ? app.allowed_next : REVIEWER_TARGETS)
+                .filter((s) => s !== app.status)
+                .map((s) => (
+                  <option key={s} value={s}>
+                    {humanize(s)}
+                  </option>
+                ))}
             </Select>
           </FormField>
           <FormField

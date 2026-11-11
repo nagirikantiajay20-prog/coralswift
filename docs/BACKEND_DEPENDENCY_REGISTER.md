@@ -44,3 +44,23 @@ These were recorded as gaps in earlier phases; the live spec now provides them. 
 | BDR-F03 | `GET /catalog/partner-criteria` (criteria, pathways, submission checklist) | R-008 | Not consumed; could replace any hard-coded criteria text | P3 |
 | BDR-F04 | `GET/DELETE /auth/sessions` | session management | Used by the Partner Security page (list/revoke); not offered in the Admin Console | P3 |
 | BDR-F05 | – (frontend) split recharts/vendor chunks | bundle >500 kB | Not done (no measurement of benefit) | P4 |
+
+## Phase 38 addendum (2026-11-11)
+
+Live spec re-fetched: **162 paths / 183 operations**. Unauthenticated live checks: `/health/live|ready` 200, protected admin/partner/auth routes 401, bad login 422, localhost preflight still 400 (BDR-O01 open).
+
+- `GET /catalog/partner-criteria`, `/catalog/project-categories`, `/site/contact` (currently `{}`), `POST /enquiries/*`, `/newsletter/*`, `/documents/upload`, `/content/sitemap` are **public-website** endpoints (bot-token protected for forms). Deliberately **not** consumed by the Admin Console or Partner Portal; no console UI exists or is required.
+- `GET /auth/permissions` (untyped) is not consumed: the console gates UI with its static role map and the backend enforces. `GET /reviewer/transitions` is untyped and unprobed (no authorised test account), so it is not wired to avoid guessing field names. Both stay pending BDR-O02.
+- `GET /partner/notifications/unread-count` is not used (the list already carries `is_read`).
+- Frontend fixes: newsletter CSV button labelled and restricted to Super Administrator; React Query cache cleared on logout, expiry or identity change (cross-user data leak); stale privacy comment corrected.
+
+---
+
+## Part D – Sync with backend `6ad57a7` contract (162 paths / 291 schemas, 2026-11-11)
+
+- **Session persistence:** refresh token mirrored to `sessionStorage` (`cs.rt`, per tab); access token memory-only. On load `authService.restore()` calls `POST /auth/refresh` (single-flight, one-time token, rotated) then `GET /auth/me`. Failure clears everything, no retry loop. Not persisted while MFA is pending. **Residual risk:** any XSS can read `sessionStorage`; backend offers no HttpOnly cookie. Mitigate with CSP and short refresh TTL/rotation (already one-time use).
+- **Partner:** bell badge from `GET /partner/notifications/unread-count` (`{unread}`); notification `category` shown, `related_reference` linked only for application/document/message categories (backend does not document category values: BDR to list them). Document actions gated by `can_replace`/`can_remove`/`can_download`.
+- **Admin:** `/admin/feed` links `portal_application` and `enquiry` records only; enquiry attachments via paginated `/admin/enquiries/{id}/documents`; accounts show `invitation_delivery_status/at` (email delivery, not activation); CSV exports share `services/api/csv.ts` (JSON error envelopes surfaced, never saved as CSV).
+- **Workload:** `/admin/workload` is enquiries only; no application-per-reviewer endpoint exists and none is called.
+- **D1:** owner decision; no D1 dependency added or changed.
+- **Needs deployed backend + approved test accounts (not done):** staff super_administrator and a non-super staff account, two partner accounts in different organizations (isolation), one invited-not-activated account, privacy-request verification token, CORS for the deployed frontend origin. Credentials via a secure channel, never committed.

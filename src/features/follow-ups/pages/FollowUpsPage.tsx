@@ -25,6 +25,7 @@ import {
   shortId,
 } from '@/features/partner-applications/utils/format'
 import { toAppError } from '@/services/api/errors'
+import { AllFollowUps } from '../components/AllFollowUps'
 import { FollowUpList } from '../components/FollowUpList'
 import {
   groupByDay,
@@ -120,6 +121,7 @@ export default function FollowUpsPage() {
           </>
         }
       />
+      <AllFollowUps />
       <p className="mb-4 rounded-md border border-line bg-warm p-3 text-sm" role="note">
         Follow-ups are internal staff tasks. Supported: create, complete. Not supported by the
         backend: cancel, reschedule, reassign a follow-up (the owner is the enquiry&apos;s

@@ -4,7 +4,6 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState, ErrorState } from '@/components/common/states'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { useAuth } from '@/features/auth/hooks/useAuth'
 import { ReviewActions } from '@/features/partner-applications/components/ReviewActions'
 import { ApplicationStatusBadge } from '@/features/partner-applications/components/StatusBadgeFor'
 import {
@@ -35,12 +34,11 @@ import { contactPrefill, summarizeDocs } from '../utils/derive'
 
 export default function OnboardingWorkspacePage() {
   const { id = '' } = useParams()
-  const { user } = useAuth()
   const q = useApplicationDetail(id)
   const notes = useNotes(id)
   const messages = useMessages(id)
   const audit = useAudit(id)
-  const reviewers = useReviewers(user?.role === 'super_administrator')
+  const reviewers = useReviewers(true)
 
   const back = (
     <Button asChild variant="secondary">

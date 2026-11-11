@@ -39,11 +39,15 @@ export interface ApiOne<T> {
 
 export interface StaffUser {
   id: string
-  email: string
+  email?: string
   full_name: string
   staff_role: string
   status: string
 }
+
+/** Backend DiscussionType (strategic enquiries only). */
+export const DISCUSSION_TYPES = ['merger', 'integration', 'strategic_partnership'] as const
+export type DiscussionType = (typeof DISCUSSION_TYPES)[number]
 
 export interface EnquiryListParams {
   page: number
@@ -55,6 +59,7 @@ export interface EnquiryListParams {
   unassigned?: boolean
   overdue?: boolean
   sla_breached?: boolean
+  discussion_type?: DiscussionType
   q?: string
   created_from?: string
   created_to?: string

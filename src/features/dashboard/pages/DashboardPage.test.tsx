@@ -33,11 +33,11 @@ describe('DashboardPage', () => {
   it('shows backend values and a per-card error', async () => {
     vi.spyOn(dashboardService, 'overview').mockResolvedValue({ open_leads: 7 })
     vi.spyOn(dashboardService, 'kpis').mockRejectedValue(new Error('boom'))
-    vi.spyOn(dashboardService, 'activeOrganizations').mockResolvedValue([
+    vi.spyOn(dashboardService, 'activeOrganizations').mockResolvedValue({ partial: false, rows: [
       { id: 'o' },
       { id: 'p' },
-    ] as never)
-    vi.spyOn(dashboardService, 'enquiries').mockResolvedValue([
+    ] } as never)
+    vi.spyOn(dashboardService, 'enquiries').mockResolvedValue({ partial: false, rows: [
       {
         id: 'e1',
         reference_number: 'ENQ-1',
@@ -56,8 +56,8 @@ describe('DashboardPage', () => {
         created_at: '2026-11-02T00:00:00Z',
         company_name: null,
       },
-    ] as never)
-    vi.spyOn(dashboardService, 'applications').mockResolvedValue([
+    ] } as never)
+    vi.spyOn(dashboardService, 'applications').mockResolvedValue({ partial: false, rows: [
       {
         id: 'a1',
         reference: 'APP-1',
@@ -72,7 +72,7 @@ describe('DashboardPage', () => {
         submitted_at: '2026-11-04T00:00:00Z',
         organization_name: 'Org2',
       },
-    ] as never)
+    ] } as never)
     renderPage()
     const val = (label: string) =>
       screen
@@ -85,5 +85,35 @@ describe('DashboardPage', () => {
     expect(await val('Pending follow-ups')).toBe('1')
     expect(await screen.findByText('open leads')).toBeTruthy()
     expect(await screen.findByRole('alert')).toBeTruthy() // KPI error isolated to its card
+  })
+
+  it('says so when a list hit the safety ceiling instead of presenting it as complete', async () => {
+    vi.spyOn(dashboardService, 'overview').mockResolvedValue({})
+    vi.spyOn(dashboardService, 'kpis').mockResolvedValue({})
+    vi.spyOn(dashboardService, 'activeOrganizations').mockResolvedValue({
+      rows: [],
+      partial: false,
+    } as never)
+    vi.spyOn(dashboardService, 'enquiries').mockResolvedValue({ rows: [], partial: true } as never)
+    vi.spyOn(dashboardService, 'applications').mockResolvedValue({
+      rows: [],
+      partial: false,
+    } as never)
+    renderPage()
+    const note = await screen.findByRole('note')
+    expect(note).toHaveTextContent(/enquiries are incomplete/)
+    expect(note).not.toHaveTextContent(/applications|partners/)
+  })
+
+  it('shows no incompleteness note for complete data', async () => {
+    vi.spyOn(dashboardService, 'overview').mockResolvedValue({})
+    vi.spyOn(dashboardService, 'kpis').mockResolvedValue({})
+    const done = { rows: [], partial: false } as never
+    vi.spyOn(dashboardService, 'activeOrganizations').mockResolvedValue(done)
+    vi.spyOn(dashboardService, 'enquiries').mockResolvedValue(done)
+    vi.spyOn(dashboardService, 'applications').mockResolvedValue(done)
+    renderPage()
+    await screen.findByText('Active partners')
+    await waitFor(() => expect(screen.queryByRole('note')).toBeNull())
   })
 })

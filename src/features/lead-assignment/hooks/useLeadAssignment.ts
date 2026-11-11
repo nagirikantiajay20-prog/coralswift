@@ -26,16 +26,13 @@ export const useCategoryCounts = (cats: AssignCategory[], me: string) =>
     })),
   })
 
-/** Newest 100 records per category: the basis of the workload view (a sample, not an aggregate). */
-export const WORKLOAD_SAMPLE = 100
-export const useWorkloadSample = (cats: AssignCategory[]) =>
-  useQueries({
-    queries: cats.map((c) => ({
-      queryKey: [prefix(c), 'lead', 'workload', c],
-      queryFn: () => svc.list(c, {}, 1, WORKLOAD_SAMPLE),
-      retry: false,
-      staleTime: 30_000,
-    })),
+/** Server aggregate; key starts with 'enquiries' so assignment mutations refresh it. */
+export const useWorkload = () =>
+  useQuery({
+    queryKey: ['enquiries', 'lead', 'workload'],
+    queryFn: svc.workload,
+    retry: false,
+    staleTime: 30_000,
   })
 
 /** Names only; the list endpoint is super-administrator only, so others fall back to short ids. */

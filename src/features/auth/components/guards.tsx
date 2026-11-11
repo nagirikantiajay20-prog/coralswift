@@ -9,7 +9,9 @@ import { useAuth } from '../hooks/useAuth'
 export function ProtectedRoute() {
   const user = useAuthStore((s) => s.user)
   const expired = useAuthStore((s) => s.sessionExpired)
+  const restoring = useAuthStore((s) => s.restoring)
   const location = useLocation()
+  if (restoring) return null
   if (user) return <Outlet />
   return (
     <Navigate

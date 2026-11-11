@@ -13,7 +13,7 @@ import { APPROVED_STATUSES } from '../types'
 import { summarizeDocs } from '../utils/derive'
 
 /** Document metrics need each application's detail; cap the fan-out to the most recent records. */
-const DETAIL_CAP = 25
+const DETAIL_CAP = 100
 
 export default function OnboardingPage() {
   const list = useApprovedApplicants()

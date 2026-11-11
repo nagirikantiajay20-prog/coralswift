@@ -12,6 +12,7 @@ import type {
   ReviewDetail,
   Reviewer,
   ReviewerApplication,
+  TransitionRule,
 } from '../types'
 
 const unwrap = <T>(r: { data: { data: T | null } }) => r.data.data
@@ -27,9 +28,10 @@ export const partnerApplicationsService = {
   audit: async (id: string) => unwrap(await api.get<ApiList<AuditItem>>(e.history(id))) ?? [],
   reviewers: async () =>
     unwrap(
-      await api.get<ApiList<Reviewer>>(e.reviewers, { params: { role: 'partner_reviewer' } }),
+      await api.get<ApiList<Reviewer>>(e.reviewers, { params: { purpose: 'applications' } }),
     ) ?? [],
 
+  transitions: async () => unwrap(await api.get<ApiList<TransitionRule>>(e.transitions)) ?? [],
   assign: (id: string, reviewer_id: string) => api.post(e.assign(id), { reviewer_id }),
   transition: (
     id: string,

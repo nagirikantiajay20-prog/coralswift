@@ -106,9 +106,9 @@ export const CAPABILITIES: { operation: string; support: Support; detail: string
     detail: 'GET/PUT/DELETE /admin/notification-templates[/{key}], POST .../preview',
   },
   {
-    operation: 'In-app admin notification feed (list, read/unread, archive, delete)',
-    support: 'missing',
-    detail: 'No endpoint. /admin/notifications is the email outbox, not a feed.',
+    operation: 'In-app admin notification feed (list, read, read-all, archive)',
+    support: 'verified',
+    detail: 'GET /admin/feed, POST /admin/feed/read-all, /{id}/read, /{id}/archive. No delete.',
   },
   {
     operation: 'Send an ad-hoc email, invitations by email, attachments',

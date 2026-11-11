@@ -137,9 +137,11 @@ function Definitions({ children }: { children: React.ReactNode }) {
 function ExportButton({
   run,
   disabledReason,
+  label = 'Export CSV',
 }: {
   run: () => Promise<void>
   disabledReason?: string
+  label?: string
 }) {
   const m = useMutation({
     mutationFn: run,
@@ -153,7 +155,7 @@ function ExportButton({
         disabled={!!disabledReason || m.isPending}
         onClick={() => m.mutate()}
       >
-        <Download className="size-4" aria-hidden /> {m.isPending ? 'Exporting…' : 'Export CSV'}
+        <Download className="size-4" aria-hidden /> {m.isPending ? 'Exporting…' : label}
       </Button>
       <span className="text-xs text-muted">
         {disabledReason ??
@@ -248,8 +250,8 @@ export function ApplicationsSection({ range }: SectionProps) {
               data={bucketByDay(f.rows, (r) => r.submitted_at, range)}
             />
             <HBarCard
-              title="Reviewer workload"
-              description="Loaded applications per assigned reviewer (ID shown; names are not available to this role)"
+              title="Loaded applications by assigned reviewer"
+              description="All statuses, loaded records only (ID shown; names are not available to this role). This is an assignment count, not open reviewer workload: the backend has no application workload endpoint."
               data={groupCount(f.rows, (r) =>
                 r.assigned_reviewer_id ? `Reviewer ${shortId(r.assigned_reviewer_id)}` : null,
               )}
@@ -367,8 +369,8 @@ export function EnquirySection({
                 data={bucketByDay(f.rows, (r) => r.created_at, range)}
               />
               <HBarCard
-                title="Assignment workload"
-                description="Loaded enquiries per assignee (user ID shown; unassigned grouped)"
+                title="Loaded enquiries by assignee"
+                description="All statuses, loaded records only (user ID shown). Authoritative open-enquiry workload per administrator is on the Lead Assignment page."
                 data={groupCount(f.rows, (r) =>
                   r.assigned_user_id ? `User ${shortId(r.assigned_user_id)}` : null,
                 )}
@@ -479,7 +481,7 @@ export function PartnersSection() {
 }
 
 /* ---------------- Communication (email outbox) ---------------- */
-export function CommunicationsSection() {
+export function CommunicationsSection({ canNewsletter = false }: { canNewsletter?: boolean }) {
   const c = useOutboxCounts(true)
   const ms = c.data
   return (
@@ -487,7 +489,6 @@ export function CommunicationsSection() {
       <Note>
         Email outbox status only. “Sent” means the provider accepted the message; the backend gives
         no delivery or read confirmation. “Logged only” was not sent. Date range does not apply.
-        Document-review and communication-history reports are unavailable (no backend source).
       </Note>
       <Grid>
         {(ms ?? [undefined, undefined, undefined, undefined]).map((m, i) => (
@@ -504,6 +505,15 @@ export function CommunicationsSection() {
           ms?.every((m) => m.value !== undefined) ? ms.reduce((a, m) => a + m.value!, 0) : undefined
         }
         to="/admin/communications/delivery"
+      />
+      <ExportButton
+        label="Export newsletter subscribers (CSV)"
+        disabledReason={
+          canNewsletter ? undefined : 'Only a Super Administrator may export subscribers.'
+        }
+        run={() =>
+          reportsService.downloadCsv('newsletter', {}, `coralswift-newsletter-${stamp()}.csv`)
+        }
       />
     </>
   )

@@ -5,7 +5,6 @@ export type PartnerModuleKey =
   | 'documents'
   | 'messages'
   | 'notifications'
-  | 'enquiries'
   | 'profileChanges'
   | 'account'
 
@@ -58,11 +57,6 @@ export const PARTNER_MODULES: Record<PartnerModuleKey, PartnerModule> = {
     capabilities: [
       'GET /partner/notifications. The backend has no in-app feed or read/unread state.',
     ],
-  },
-  enquiries: {
-    title: 'Enquiries',
-    description: 'Enquiry history for your organization.',
-    capabilities: ['GET /partner/enquiries (origin enquiry and your submissions)'],
   },
   profileChanges: {
     title: 'Profile changes',

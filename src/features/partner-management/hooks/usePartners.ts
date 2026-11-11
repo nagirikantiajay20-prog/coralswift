@@ -36,3 +36,17 @@ export function useSetPartnerStatus(id: string, onDone: () => void) {
     onError: (e) => toast.error(toAppError(e).message),
   })
 }
+
+export const usePartnerRevisions = (id: string) =>
+  useQuery({
+    queryKey: ['partners', 'revisions', id],
+    queryFn: () => svc.revisions(id),
+    retry: false,
+  })
+
+export const usePartnerActivity = (id: string) =>
+  useQuery({
+    queryKey: ['partners', 'activity', id],
+    queryFn: () => svc.activity(id),
+    retry: false,
+  })

@@ -69,9 +69,9 @@ export const CATEGORY_GROUPS: { title: string; categories: DocCategory[] }[] = [
 export const needsAction = (v: DocVersion | null | undefined) =>
   v?.review_status === 'rejected' || v?.review_status === 'clarification_needed'
 
-/** Accepted documents are treated as locked in the UI; the backend still decides. */
-export const canModify = (d: PartnerDocument) =>
-  !!d.current_version && d.current_version.review_status !== 'accepted'
+/** Replace/remove are offered only when the backend says so (can_replace / can_remove). */
+export const canModify = (d: PartnerDocument) => !!d.current_version && d.can_replace === true
+export const canRemove = (d: PartnerDocument) => !!d.current_version && d.can_remove === true
 
 export interface DocRequest {
   message: PartnerMessage

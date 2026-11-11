@@ -32,7 +32,7 @@ export const looksStrategic = (r: Pick<AuditRowRaw, 'record_type' | 'action' | '
 }
 
 export function toEntry(r: AuditRowRaw, canSeeStrategic: boolean): AuditEntry {
-  const restricted = !canSeeStrategic && looksStrategic(r)
+  const restricted = !canSeeStrategic && (r.is_strategic === true || looksStrategic(r))
   return {
     id: r.id,
     at: r.created_at,
@@ -41,6 +41,7 @@ export function toEntry(r: AuditRowRaw, canSeeStrategic: boolean): AuditEntry {
     recordId: restricted ? '' : r.record_id,
     actorType: r.actor_type,
     actorUserId: r.actor_user_id,
+    actorName: r.actor_name ?? null,
     organizationId: restricted ? null : r.organization_id,
     requestId: r.request_id,
     meta: restricted ? {} : (redact(r.meta ?? {}) as Record<string, unknown>),

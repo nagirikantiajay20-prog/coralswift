@@ -10,6 +10,7 @@ import { ErrorState } from '@/components/common/states'
 import { StatCard } from '@/components/common/StatCard'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { DocumentQueue, useQueueCount } from '../components/DocumentQueue'
 import { ApplicationStatusBadge } from '@/features/partner-applications/components/StatusBadgeFor'
 import { useApplicationList } from '@/features/partner-applications/hooks/useApplications'
 import {
@@ -25,6 +26,17 @@ const NA = 'Unavailable: the backend has no admin-wide document endpoint'
 
 /** Backend-scoped application list; documents are reached per application (the only admin read path). */
 export default function DocumentsPage() {
+  const total = useQueueCount()
+  const pending = useQueueCount('pending')
+  const accepted = useQueueCount('accepted')
+  const rejected = useQueueCount('rejected')
+  const clarification = useQueueCount('clarification_needed')
+  const metric = (c: typeof total) => ({
+    value: c.data,
+    loading: c.isPending,
+    error: c.isError,
+    hint: c.isSuccess && c.data === undefined ? 'Backend returned no total' : undefined,
+  })
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState<PortalStatus | 'all'>('all')
   const [q, setQ] = useState('')
@@ -71,11 +83,11 @@ export default function DocumentsPage() {
         aria-label="Document metrics"
         className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
-        <StatCard label="Total documents" icon={FileText} hint={NA} />
-        <StatCard label="Pending review" icon={FileClock} hint={NA} />
-        <StatCard label="Accepted" icon={FileCheck} hint={NA} />
-        <StatCard label="Rejected" icon={FileX} hint={NA} />
-        <StatCard label="Replacement requested" icon={RefreshCw} hint={NA} />
+        <StatCard label="Total documents" icon={FileText} {...metric(total)} />
+        <StatCard label="Pending review" icon={FileClock} {...metric(pending)} />
+        <StatCard label="Accepted" icon={FileCheck} {...metric(accepted)} />
+        <StatCard label="Rejected" icon={FileX} {...metric(rejected)} />
+        <StatCard label="Clarification needed" icon={RefreshCw} {...metric(clarification)} />
         <StatCard label="Missing documents" icon={FileMinus} hint={NA} />
         <StatCard label="Recently uploaded" icon={Upload} hint={NA} />
       </section>
@@ -87,6 +99,7 @@ export default function DocumentsPage() {
         </Link>
         ); strategic attachments remain restricted to authorised staff.
       </p>
+      <DocumentQueue />
       <Card>
         <div className="flex flex-wrap items-end gap-3 border-b border-line p-4">
           <div className="w-full sm:w-64">

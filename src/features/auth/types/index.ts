@@ -24,3 +24,11 @@ export interface MfaEnrollOut {
   secret: string
   otpauth_uri: string
 }
+
+/** openapi.json PermissionsOut. */
+export interface PermissionsOut {
+  account_type: string
+  staff_role: string | null
+  modules: { module: string; endpoints: { method: string; path: string }[] }[]
+  role_matrix?: Record<string, string[]> | null
+}

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { fetchAll } from '@/features/reports/utils/aggregate'
 import { useStaffList } from '@/features/user-management/hooks/useUsers'
 import { auditLogsService as svc } from '../services/auditLogsService'
 import type { AuditFilters } from '../types'
@@ -18,16 +19,16 @@ export const useAuditPage = (f: AuditFilters, page: number) => {
   })
 }
 
-/** Latest 100 events: basis for the by-administrator / by-module breakdowns (labelled as a sample). */
+/** All events (paged, up to the safety ceiling): basis for the by-administrator / by-module breakdowns. */
 export const useAuditSample = () => {
   const { can } = useAuth()
   const strategic = can('strategicEnquiries')
   return useQuery({
     queryKey: ['audit', 'sample', strategic],
-    queryFn: async () =>
-      (await svc.list({ action: '', recordType: '', actorUserId: '' }, 1, 100)).rows.map((r) =>
-        toEntry(r, strategic),
-      ),
+    queryFn: async () => {
+      const f = await fetchAll((p) => svc.list({ action: '', recordType: '', actorUserId: '' }, p, 100))
+      return { entries: f.rows.map((r) => toEntry(r, strategic)), partial: f.partial }
+    },
     retry: false,
   })
 }
@@ -56,3 +57,19 @@ export function useActorNames() {
     staff: staff.data ?? [],
   }
 }
+
+/** One event by id, used when the detail page is opened without list state (deep link / reload). */
+export const useAuditEvent = (id: string | undefined, enabled: boolean) => {
+  const { can } = useAuth()
+  const strategic = can('strategicEnquiries')
+  return useQuery({
+    queryKey: ['audit', 'event', id, strategic],
+    queryFn: async () => toEntry(await svc.get(id!), strategic),
+    enabled: enabled && !!id,
+    retry: false,
+  })
+}
+
+/** Action catalogue for the filter list (GET /admin/audit/actions). */
+export const useAuditActions = () =>
+  useQuery({ queryKey: ['audit', 'actions'], queryFn: svc.actions, retry: false })

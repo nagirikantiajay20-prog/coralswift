@@ -2,6 +2,20 @@
 export const DELIVERY_STATUSES = ['pending', 'sent', 'logged', 'failed'] as const
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number]
 
+/** Backend `FeedItemOut` (GET /admin/feed). */
+export interface FeedItem {
+  id: string
+  kind: string
+  title: string
+  record_type: string | null
+  record_id: string | null
+  is_strategic: boolean
+  created_at: string
+  read_at: string | null
+  is_read: boolean
+  archived_at: string | null
+}
+
 export interface ApiList<T> {
   data: T[] | null
   meta: Record<string, unknown> | null

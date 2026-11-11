@@ -102,8 +102,7 @@ export function AssignDialog({
   onClose: () => void
 }) {
   const { user } = useAuth()
-  const isSuper = user?.role === 'super_administrator'
-  const staff = useStaff(isSuper)
+  const staff = useStaff(true)
   const [value, setValue] = useState(enquiry.assigned_user_id ?? '')
   const [confirm, setConfirm] = useState(false)
   const m = useEnquiryMutation(
@@ -140,14 +139,11 @@ export function AssignDialog({
             else onClose()
           }}
         >
-          <FormField
-            label="Owner"
-            hint={isSuper ? undefined : 'The staff list is only available to super administrators.'}
-          >
+          <FormField label="Owner">
             <Select
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              disabled={isSuper && staff.isPending}
+              disabled={staff.isPending}
             >
               <option value="">Unassigned</option>
               {user && <option value={user.id}>Me ({user.name})</option>}

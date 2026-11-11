@@ -109,7 +109,21 @@ describe('audit pages', () => {
     expect(screen.queryByText('hunter2')).toBeNull()
     expect(screen.queryByRole('button')).toBeNull()
   })
-  it('detail page without state does not fabricate an event', () => {
+  it('detail page opened cold fetches the event by id and applies the strategic gate', async () => {
+    const get = vi
+      .spyOn(auditLogsService, 'get')
+      .mockResolvedValue(row({ id: 'e9', actor_name: 'Asha Rao', is_strategic: true }))
+    wrap(
+      <Routes>
+        <Route path="/audit-logs/:id" element={<AuditLogDetailPage />} />
+      </Routes>,
+      ['/audit-logs/e9'],
+    )
+    await waitFor(() => expect(get).toHaveBeenCalledWith('e9'))
+    expect(await screen.findByText(/withheld for your role/)).toBeInTheDocument()
+    expect(screen.getByText('Asha Rao')).toBeInTheDocument()
+  })
+  it('detail page without state or id does not fabricate an event', () => {
     wrap(<AuditLogDetailPage />)
     expect(screen.getByText('Event not loaded')).toBeInTheDocument()
   })

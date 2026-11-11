@@ -3,10 +3,22 @@ import { useState } from 'react'
 import { EmptyState } from '@/components/common/states'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/authStore'
+import { Link } from 'react-router-dom'
 import { Async, field, human, Panel, when } from '../components/Panel'
 import { partnerDashboardService as s } from '../services/partnerDashboardService'
 
 const SIZE = 20
+
+/**
+ * Category -> partner page, by EXACT (case-insensitive) category. The OpenAPI schema types
+ * `category` and `related_reference` as free strings with no enumerated values, so no destination
+ * is documented and none is guessed: the table ships empty, `related_reference` is shown as plain
+ * text, and unknown categories are always safe. Add entries (e.g. `application_update:
+ * PARTNER_ROUTES.application`) only once the backend publishes the values (docs/BACKEND_REQUESTS.md).
+ */
+export const CATEGORY_ROUTES: Record<string, string> = {}
+export const destination = (category: string | undefined) =>
+  category ? CATEGORY_ROUTES[category.toLowerCase()] : undefined
 
 /**
  * GET /partner/notifications returns PartnerNotificationOut rows (template, delivery_status,
@@ -28,6 +40,7 @@ export default function PartnerNotificationsPage() {
   const qc = useQueryClient()
   const refresh = () => qc.invalidateQueries({ queryKey: ['partner', pid, 'notifications'] })
   const readOne = useMutation({ mutationFn: s.markNotificationRead, onSuccess: refresh })
+  const unreadOne = useMutation({ mutationFn: s.markNotificationUnread, onSuccess: refresh })
   const readAll = useMutation({ mutationFn: s.markAllNotificationsRead, onSuccess: refresh })
   const unread = rows.some((n) => n.is_read === false)
   return (
@@ -48,7 +61,7 @@ export default function PartnerNotificationsPage() {
             Mark all as read
           </Button>
         )}
-        {(readOne.isError || readAll.isError) && (
+        {(readOne.isError || readAll.isError || unreadOne.isError) && (
           <p role="alert" className="mb-2 text-sm text-rose-800">
             Could not update read state. Try again.
           </p>
@@ -69,7 +82,26 @@ export default function PartnerNotificationsPage() {
                       {n.is_read === false && (
                         <span className="mr-2 text-xs text-rose-800">Unread</span>
                       )}
-                      {human(field(n, ['template', 'type', 'subject']) ?? 'Email')}
+                      {field(n, ['title']) ??
+                        human(field(n, ['template', 'type', 'subject']) ?? 'Email')}
+                      {field(n, ['category']) && (
+                        <span className="ml-2 text-xs font-normal text-muted">
+                          {human(field(n, ['category'])!)}
+                        </span>
+                      )}
+                      {field(n, ['related_reference']) &&
+                        (destination(field(n, ['category'])) ? (
+                          <Link
+                            to={destination(field(n, ['category']))!}
+                            className="ml-2 font-normal text-coral-ink hover:underline"
+                          >
+                            {field(n, ['related_reference'])}
+                          </Link>
+                        ) : (
+                          <span className="ml-2 font-normal text-muted">
+                            {field(n, ['related_reference'])}
+                          </span>
+                        ))}
                     </span>
                     <span className="flex items-center gap-2 text-muted">
                       {[field(n, ['delivery_status', 'status']), at && when(at)]
@@ -83,6 +115,16 @@ export default function PartnerNotificationsPage() {
                           onClick={() => readOne.mutate(n.id as string)}
                         >
                           Mark read
+                        </Button>
+                      )}
+                      {n.is_read === true && typeof n.id === 'string' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={unreadOne.isPending}
+                          onClick={() => unreadOne.mutate(n.id as string)}
+                        >
+                          Mark unread
                         </Button>
                       )}
                     </span>

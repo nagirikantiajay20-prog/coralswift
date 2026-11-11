@@ -10,7 +10,6 @@ import { ErrorState } from '@/components/common/states'
 import { DatePicker } from '@/components/forms/inputs'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { useAuth } from '@/features/auth/hooks/useAuth'
 import { ApplicationStatusBadge } from '@/features/partner-applications/components/StatusBadgeFor'
 import { useReviewers } from '@/features/partner-applications/hooks/useApplications'
 import type { PortalStatus, ReviewerApplication } from '@/features/partner-applications/types'
@@ -23,9 +22,8 @@ const PAGE_SIZE = 20
 type Sort = 'newest' | 'oldest' | 'name'
 
 export default function ApprovedApplicantsPage() {
-  const { user } = useAuth()
   const q = useApprovedApplicants()
-  const reviewers = useReviewers(user?.role === 'super_administrator')
+  const reviewers = useReviewers(true)
   const names = useMemo(
     () => new Map((reviewers.data ?? []).map((r) => [r.id, r.full_name])),
     [reviewers.data],

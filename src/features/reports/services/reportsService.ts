@@ -1,4 +1,4 @@
-import { api } from '@/services/api/client'
+import { downloadCsv as csv } from '@/services/api/csv'
 import { businessEnquiriesService as enq } from '@/features/business-enquiries/services/businessEnquiriesService'
 import type { EnquiryListParams, EnquiryRow } from '@/features/business-enquiries/types'
 import { communicationService } from '@/features/communication/services/communicationService'
@@ -15,6 +15,7 @@ import type { EnquiryScope, Metric } from '../types'
 const CSV = {
   enquiries: '/api/v1/admin/reports/enquiries.csv',
   applications: '/api/v1/admin/reports/applications.csv',
+  newsletter: '/api/v1/admin/reports/newsletter.csv',
 }
 
 /** Exact count = the backend-reported total of a one-row page. Never derived from a page of rows. */
@@ -101,12 +102,6 @@ export const reportsService = {
     params: Record<string, string | undefined>,
     filename: string,
   ) {
-    const clean = Object.fromEntries(Object.entries(params).filter(([, v]) => v))
-    const blob = (await api.get<Blob>(CSV[kind], { params: clean, responseType: 'blob' })).data
-    if (!blob.size) throw new Error('The export is empty.')
-    const url = URL.createObjectURL(blob)
-    const a = Object.assign(document.createElement('a'), { href: url, download: filename })
-    a.click()
-    URL.revokeObjectURL(url)
+    await csv(CSV[kind], params, filename)
   },
 }

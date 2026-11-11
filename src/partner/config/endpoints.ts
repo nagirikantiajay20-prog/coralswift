@@ -25,7 +25,11 @@ export const partnerEndpoints = {
   documentHistory: (id: string) => `${P}/documents/${id}/history`,
   documentDownload: (id: string) => `${P}/documents/${id}/download`, // GET ?version; authorised + audited
   notifications: `${P}/notifications`, // GET page,page_size -> PartnerNotificationOut (template, delivery_status, created_at, read_at, is_read)
+  notificationsUnreadCount: `${P}/notifications/unread-count`, // GET -> { unread: int }
   notificationRead: (id: string) => `${P}/notifications/${id}/read`, // POST; own only, others 404
+  notificationUnread: (id: string) => `${P}/notifications/${id}/unread`, // POST; own only
   notificationsReadAll: `${P}/notifications/read-all`, // POST -> { updated count }
+  editableFields: `${P}/organization/editable-fields`, // GET EditableFieldOut[]
+  documentRequests: `${P}/document-requests`, // GET ?status=open|fulfilled|cancelled (meta.open); upload with request_id fulfils
   enquiries: `${P}/enquiries`, // GET untyped dict rows
 } as const

@@ -17,6 +17,7 @@ import { usePartnerDocuments, useSecureDownload } from '../hooks/usePartnerDocum
 import type { PartnerDocument } from '../services/partnerDocumentService'
 import {
   canModify,
+  canRemove,
   canPreview,
   CATEGORY_GROUPS,
   categoryLabel,
@@ -110,7 +111,7 @@ export default function PartnerDocumentsPage() {
           )}
           {doc && v && (
             <>
-              {canPreview(v.content_type) && (
+              {doc.can_download === true && canPreview(v.content_type) && (
                 <Button
                   size="sm"
                   variant="secondary"
@@ -120,14 +121,16 @@ export default function PartnerDocumentsPage() {
                   Preview
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={dl.busy}
-                onClick={() => void dl.download(doc.id, v)}
-              >
-                Download
-              </Button>
+              {doc.can_download === true && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={dl.busy}
+                  onClick={() => void dl.download(doc.id, v)}
+                >
+                  Download
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="secondary"
@@ -136,14 +139,14 @@ export default function PartnerDocumentsPage() {
                 History
               </Button>
               {canModify(doc) && (
-                <>
-                  <Button size="sm" onClick={() => setUpload({ category, documentId: doc.id })}>
-                    {needsAction(v) ? 'Upload replacement' : 'Replace'}
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setRemoving(doc)}>
-                    Remove
-                  </Button>
-                </>
+                <Button size="sm" onClick={() => setUpload({ category, documentId: doc.id })}>
+                  {needsAction(v) ? 'Upload replacement' : 'Replace'}
+                </Button>
+              )}
+              {canRemove(doc) && (
+                <Button size="sm" variant="ghost" onClick={() => setRemoving(doc)}>
+                  Remove
+                </Button>
               )}
             </>
           )}
@@ -166,6 +169,36 @@ export default function PartnerDocumentsPage() {
         </p>
       )}
 
+      {(d.docRequests.data ?? []).length > 0 && (
+        <Card aria-label="Open document requests">
+          <CardHeader>
+            <CardTitle>Open document requests</CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-line">
+            {(d.docRequests.data ?? []).map((r) => (
+              <div key={r.id} className="space-y-2 py-3 text-sm">
+                <p className="font-medium">
+                  {categoryLabel(r.category)}
+                  {r.application_reference ? ` · ${r.application_reference}` : ''}
+                </p>
+                <p className="whitespace-pre-line">{r.note}</p>
+                <p className={r.is_overdue ? 'text-rose-800' : 'text-muted'}>
+                  {r.due_at ? `Due ${date(r.due_at)}` : 'No deadline'}
+                  {r.is_overdue ? ' (overdue)' : ''} · Requested {date(r.created_at)}
+                </p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setUpload({ category: r.category, requestId: r.id })}
+                >
+                  Upload {categoryLabel(r.category)}
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {requests.length > 0 && (
         <Card aria-label="Additional document requests">
           <CardHeader>
@@ -177,13 +210,15 @@ export default function PartnerDocumentsPage() {
                 <p className="text-muted">Requested {date(r.message.created_at)}</p>
                 <p className="whitespace-pre-line">{r.message.body}</p>
                 <ul className="flex flex-wrap gap-2">
-                  {r.categories.map((c) => (
-                    <li key={c}>
-                      <Button size="sm" variant="secondary" onClick={() => startUpload(c)}>
-                        {byCategory(c).length ? 'Replace' : 'Upload'} {categoryLabel(c)}
-                      </Button>
-                    </li>
-                  ))}
+                  {r.categories
+                    .filter((c) => !byCategory(c)[0] || canModify(byCategory(c)[0]))
+                    .map((c) => (
+                      <li key={c}>
+                        <Button size="sm" variant="secondary" onClick={() => startUpload(c)}>
+                          {byCategory(c).length ? 'Replace' : 'Upload'} {categoryLabel(c)}
+                        </Button>
+                      </li>
+                    ))}
                 </ul>
                 <Button size="sm" variant="ghost" onClick={() => setResponding(r)}>
                   Send response to reviewer

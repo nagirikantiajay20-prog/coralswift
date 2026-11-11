@@ -30,9 +30,9 @@ export const businessEnquiriesService = {
   closeMeeting: (id: string, a: 'decline' | 'cancel', reason: string) =>
     api.post(e.meeting(id, a), { reason }),
   completeFollowUp: (id: string, fu: string) => api.post(e.completeFollowUp(id, fu)),
-  /** Super administrator only (GET /admin/users). */
-  staff: async (role: string) =>
-    (await api.get<ApiList<StaffUser>>(e.users, { params: { role } })).data.data ?? [],
+  /** GET /admin/assignees (any staff role). */
+  staff: async (purpose: 'enquiries' | 'applications' = 'enquiries') =>
+    (await api.get<ApiList<StaffUser>>(e.users, { params: { purpose } })).data.data ?? [],
   /** Authenticated, audited blob download; the caller opens it from an object URL and never stores it. */
   download: async (id: string, doc: string) =>
     (await api.get<Blob>(e.download(id, doc), { responseType: 'blob' })).data,

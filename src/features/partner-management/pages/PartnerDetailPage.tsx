@@ -14,9 +14,19 @@ import {
   Section,
 } from '@/features/partner-applications/pages/ApplicationDetailPage'
 import { FormDialog } from '@/features/partner-applications/components/ReviewActions'
-import { formatDate, humanize, shortId } from '@/features/partner-applications/utils/format'
+import {
+  formatDate,
+  formatDateTime,
+  humanize,
+  shortId,
+} from '@/features/partner-applications/utils/format'
 import { toAppError } from '@/services/api/errors'
-import { usePartnerDetail, useSetPartnerStatus } from '../hooks/usePartners'
+import {
+  usePartnerActivity,
+  usePartnerDetail,
+  usePartnerRevisions,
+  useSetPartnerStatus,
+} from '../hooks/usePartners'
 import { statusChangeSchema, type StatusChangeForm } from '../schemas'
 import type { PartnerDetail } from '../types'
 import { lifecycle, STATUS_TONE, statusAction } from '../utils/partners'
@@ -64,6 +74,66 @@ function StatusDialog({
         </FormField>
       </form>
     </FormDialog>
+  )
+}
+
+const short = (v: unknown) => {
+  const t = typeof v === 'string' ? v : JSON.stringify(v)
+  return t.length > 120 ? `${t.slice(0, 120)}…` : t
+}
+
+/** Profile revisions and audit trail for one organisation; each part fails independently. */
+function History({ id }: { id: string }) {
+  const rev = usePartnerRevisions(id)
+  const act = usePartnerActivity(id)
+  const state = (q: { isPending: boolean; isError: boolean; error: unknown; data?: unknown[] }) =>
+    q.isPending ? (
+      <LoadingState label="Loading…" />
+    ) : q.isError ? (
+      <p role="alert" className="text-sm text-rose-800">
+        {toAppError(q.error).status === 403
+          ? 'You do not have permission to view this.'
+          : toAppError(q.error).message}
+      </p>
+    ) : !q.data?.length ? (
+      <EmptyState title="Nothing recorded yet" />
+    ) : null
+  return (
+    <>
+      <Section title="Profile revisions">
+        {state(rev) ?? (
+          <ul className="divide-y divide-line text-sm">
+            {rev.data?.map((r) => (
+              <li key={r.version} className="space-y-1 py-2">
+                <p>
+                  <b>Version {r.version}</b> · {r.changed_by_name ?? shortId(r.changed_by)} ·{' '}
+                  {formatDateTime(r.created_at)}
+                </p>
+                <ul className="text-muted">
+                  {Object.entries(r.changes).map(([k, v]) => (
+                    <li key={k}>
+                      {humanize(k)}: {short(v)}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+      <Section title="Activity">
+        {state(act) ?? (
+          <ul className="divide-y divide-line text-sm">
+            {act.data?.map((a) => (
+              <li key={a.id} className="py-2">
+                {humanize(a.action)} · {humanize(a.record_type)} · {a.actor_name ?? 'System'} ·{' '}
+                {formatDateTime(a.created_at)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+    </>
   )
 }
 
@@ -154,23 +224,25 @@ function Profile({ d, tab }: { d: PartnerDetail; tab: (typeof TABS)[number] }) {
       </Section>
     )
   return (
-    <Section title="Onboarding, accounts and activity">
-      <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
-        <li>
-          Onboarding is tracked per application (stage <b>pilot_onboarding</b> / <b>scale_up</b>) in
-          Onboarding; it does not imply account activation.
-        </li>
-        <li>
-          Partner account provisioning/activation state is not exposed by the organization
-          endpoints.
-        </li>
-        <li>
-          Partner-level activity history, agreements, relationship manager and performance data are
-          not provided by the backend.
-        </li>
-        <li>Documents belong to applications: open them from the Partnership tab.</li>
-      </ul>
-    </Section>
+    <>
+      <Section title="Onboarding and accounts">
+        <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
+          <li>
+            Onboarding is tracked per application (stage <b>pilot_onboarding</b> / <b>scale_up</b>)
+            in Onboarding; it does not imply account activation.
+          </li>
+          <li>
+            Partner account provisioning/activation state is not exposed by the organization
+            endpoints.
+          </li>
+          <li>
+            Agreements, relationship manager and performance data are not provided by the backend.
+          </li>
+          <li>Documents belong to applications: open them from the Partnership tab.</li>
+        </ul>
+      </Section>
+      <History id={o.id} />
+    </>
   )
 }
 

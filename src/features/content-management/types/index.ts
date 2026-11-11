@@ -45,6 +45,8 @@ export interface AdminContent {
   review_note: string | null
   current_version: number
   claim_ids: string[]
+  /** Set while a future publication is scheduled (POST/DELETE .../schedule). */
+  scheduled_publish_at?: string | null
 }
 export interface ContentVersion {
   version_no: number

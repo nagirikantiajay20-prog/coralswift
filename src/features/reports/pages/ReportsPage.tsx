@@ -17,6 +17,7 @@ import {
   OverviewSection,
   PartnersSection,
 } from '../components/Sections'
+import { BackendReports } from '../components/BackendReports'
 import { DEFAULT_FILTERS, type ReportFilters, type Section } from '../types'
 import { PRESET_LABEL, PRESETS, resolveRange } from '../utils/range'
 
@@ -210,7 +211,12 @@ export default function ReportsPage() {
             />
           )}
           {section === 'partners' && <PartnersSection />}
-          {section === 'communications' && <CommunicationsSection />}
+          {section === 'communications' && (
+            <>
+              <CommunicationsSection canNewsletter={can('users')} />
+              <BackendReports range={range} />
+            </>
+          )}
         </div>
       )}
     </>

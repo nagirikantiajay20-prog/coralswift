@@ -221,15 +221,15 @@ export default function DiscussionsPage() {
         />
         {canApps ? (
           <StatCard
-            label="Pending partner responses"
+            label="Applications awaiting information"
             icon={Hourglass}
             loading={metrics.isPending}
             {...metric(m?.pendingResponses)}
             error={metrics.isError || m?.pendingResponses.failed}
-            hint="Applications awaiting information"
+            hint="Status count, not a reply count: the backend has no discussion threads"
           />
         ) : (
-          <StatCard label="Pending responses" icon={Hourglass} hint="Application access required" />
+          <StatCard label="Applications awaiting information" icon={Hourglass} hint="Application access required" />
         )}
         <StatCard
           label="Upcoming follow-ups"

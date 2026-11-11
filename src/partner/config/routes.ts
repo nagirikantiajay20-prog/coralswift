@@ -23,5 +23,5 @@ export const PARTNER_ROUTES = {
   settings: '/partner/settings',
   settingsSecurity: '/partner/settings/security',
   settingsPrivacy: '/partner/settings/privacy',
-  account:'/partner/account',
+  account: '/partner/account',
 } as const

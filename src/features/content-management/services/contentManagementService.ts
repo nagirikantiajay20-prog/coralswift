@@ -39,6 +39,10 @@ export const contentManagementService = {
         action === 'approve' || action === 'reject' ? { note: note ?? null } : undefined,
       ),
     ),
+  /** publish_at: ISO datetime in the future; approved, claims-cleared content only. */
+  schedule: (id: string, publishAt: string) =>
+    one(api.post<One<AdminContent>>(e.schedule(id), { publish_at: publishAt })),
+  cancelSchedule: (id: string) => one(api.delete<One<AdminContent>>(e.schedule(id))),
   attach: (id: string, file: File, versionLabel?: string) => {
     const form = new FormData()
     form.append('file', file)

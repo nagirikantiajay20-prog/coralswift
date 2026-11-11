@@ -24,3 +24,18 @@ describe('canAccess', () => {
     }
   })
 })
+
+import { canAccessWith } from './permissions'
+
+describe('canAccessWith (backend permissions)', () => {
+  it('falls back to the role hint when permissions are unknown', () => {
+    expect(canAccessWith('content_administrator', 'content', null)).toBe(true)
+    expect(canAccessWith('content_administrator', 'users', null)).toBe(false)
+  })
+  it('uses backend routes for probed modules and keeps the hint for others', () => {
+    const paths = ['/api/v1/admin/enquiries', '/api/v1/admin/enquiries/{enquiry_id}']
+    expect(canAccessWith('business_development_manager', 'enquiries', paths)).toBe(true)
+    expect(canAccessWith('business_development_manager', 'reports', paths)).toBe(false)
+    expect(canAccessWith('business_development_manager', 'dashboard', paths)).toBe(true)
+  })
+})

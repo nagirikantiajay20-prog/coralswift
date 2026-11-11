@@ -22,6 +22,10 @@ export interface PartnerDocument {
   category: string
   status: string
   current_version: DocVersion | null
+  /** Backend-decided permissions; the UI shows an action only when its flag is exactly true. */
+  can_replace: boolean
+  can_remove: boolean
+  can_download: boolean
 }
 export interface PartnerMessage {
   id: string
@@ -33,7 +37,21 @@ export interface PartnerMessage {
   in_reply_to: string | null
   created_at: string
 }
+/** Backend PartnerDocumentRequestOut (GET /partner/document-requests). */
+export interface PartnerDocumentRequest {
+  id: string
+  application_reference: string | null
+  category: string
+  note: string
+  due_at: string | null
+  status: 'open' | 'fulfilled' | 'cancelled'
+  is_overdue: boolean
+  fulfilled_document_id: string | null
+  fulfilled_at: string | null
+  created_at: string
+}
 export interface UploadOpts {
+  requestId?: string
   expiresOn?: string
   signal?: AbortSignal
   onProgress?: (percent: number) => void
@@ -41,11 +59,12 @@ export interface UploadOpts {
 
 const data = <T>(r: { data: { data: T | null } }) => r.data.data
 
-function form(file: File, expiresOn?: string, category?: string) {
+function form(file: File, expiresOn?: string, category?: string, requestId?: string) {
   const f = new FormData()
   f.append('file', file)
   if (category) f.append('category', category)
   if (expiresOn) f.append('expires_on', expiresOn)
+  if (requestId) f.append('request_id', requestId)
   return f
 }
 const cfg = (o: UploadOpts) => ({
@@ -56,11 +75,17 @@ const cfg = (o: UploadOpts) => ({
 
 export const partnerDocumentService = {
   list: async () => data(await api.get<{ data: PartnerDocument[] | null }>(E.documents)) ?? [],
+  documentRequests: async (status: PartnerDocumentRequest['status'] = 'open') =>
+    data(
+      await api.get<{ data: PartnerDocumentRequest[] | null }>(E.documentRequests, {
+        params: { status, page_size: 100 },
+      }),
+    ) ?? [],
   upload: async (file: File, category: string, o: UploadOpts = {}) =>
     data(
       await api.post<{ data: PartnerDocument | null }>(
         E.documents,
-        form(file, o.expiresOn, category),
+        form(file, o.expiresOn, category, o.requestId),
         cfg(o),
       ),
     ),

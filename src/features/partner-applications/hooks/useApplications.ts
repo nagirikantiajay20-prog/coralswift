@@ -27,6 +27,14 @@ export const useMessages = (id: string) =>
   useQuery({ queryKey: appKeys.messages(id), queryFn: () => svc.messages(id) })
 export const useAudit = (id: string) =>
   useQuery({ queryKey: appKeys.audit(id), queryFn: () => svc.audit(id), retry: false })
+/** Backend transition requirements; static per deploy, so cached for an hour. Failure falls back to local rules. */
+export const useTransitionRules = () =>
+  useQuery({
+    queryKey: ['applications', 'transitions'],
+    queryFn: svc.transitions,
+    staleTime: 3_600_000,
+    retry: false,
+  })
 export const useReviewers = (enabled: boolean) =>
   useQuery({ queryKey: ['reviewers'], queryFn: svc.reviewers, enabled, retry: false })
 
