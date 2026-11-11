@@ -88,7 +88,7 @@ describe('PartnerPerformancePage', () => {
     expect(await screen.findByRole('button', { name: /retry|try again/i })).toBeInTheDocument()
   })
 
-  it('has a Performance nav entry', () => {
-    expect(PARTNER_NAVIGATION.some((n) => n.to === '/partner/performance')).toBe(true)
+  it('hides Performance from nav (Phase 4)', () => {
+    expect(PARTNER_NAVIGATION.some((n) => n.to === '/partner/performance')).toBe(false)
   })
 })

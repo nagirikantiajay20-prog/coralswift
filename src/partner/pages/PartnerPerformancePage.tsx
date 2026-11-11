@@ -12,7 +12,7 @@ import { partnerDashboardService as s } from '../services/partnerDashboardServic
 import { pathwayLabel } from '../utils/engagement'
 
 /**
- * Phase 34. The backend (openapi.json, 2026-11-10, 115 paths) has NO partner-facing performance,
+ * Phase 34. The backend (openapi.json, 2026-11-10 snapshot) has NO partner-facing performance,
  * scorecard, feedback, milestone, engagement or export endpoints, and the only reports are
  * staff-only CSVs. So no metric, score, trend or export exists here. This page shows the
  * verified feasibility table and the one real history signal: the partner's own applications.

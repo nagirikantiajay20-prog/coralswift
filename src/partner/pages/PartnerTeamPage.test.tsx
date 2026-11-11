@@ -28,7 +28,7 @@ describe('Phase 33 team page', () => {
     spies.forEach((s) => expect(s).not.toHaveBeenCalled())
     vi.restoreAllMocks()
   })
-  it('has a nav entry', () => {
-    expect(PARTNER_NAVIGATION.map((n) => n.to)).toContain('/partner/team')
+  it('hides Team from nav', () => {
+    expect(PARTNER_NAVIGATION.map((n) => n.to)).not.toContain('/partner/team')
   })
 })

@@ -90,8 +90,9 @@ describe('Phase 32 partner pages', () => {
     renderAt('/partner/follow-ups')
     expect(screen.getByText('partner login')).toBeInTheDocument()
   })
-  it('has nav entries', () => {
+  it('hides Meetings, keeps Follow-ups in nav', () => {
     const to = PARTNER_NAVIGATION.map((n) => n.to)
-    expect(to).toEqual(expect.arrayContaining(['/partner/meetings', '/partner/follow-ups']))
+    expect(to).toContain('/partner/follow-ups')
+    expect(to).not.toContain('/partner/meetings')
   })
 })

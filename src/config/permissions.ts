@@ -2,9 +2,8 @@
  * Roles are defined by the PRD (section 14). The role -> module mapping below is a FRONTEND
  * NAVIGATION HINT derived from the PRD role descriptions and the least-privilege principle.
  * It is NOT authorization: the backend must enforce access on every request.
- * The backend exposes role NAMES (StaffRole) but no permission matrix endpoint, so every mapping
- * below is PENDING except those the OpenAPI summaries state as super-administrator-only
- * (users, audit logs, settings-type admin, content approval, application CSV).
+ * `GET /auth/permissions` is consumed at login; this static map is the fallback and mirrors the
+ * PRD s.14 role descriptions.
  */
 export const ROLES = {
   super_administrator: 'Super Administrator',

@@ -88,7 +88,7 @@ describe('engagement pathway labels', () => {
     expect(pathwayLabel('something_new')).toBe('Something new')
     expect(pathwayLabel(undefined)).toBeUndefined()
   })
-  it('has a Projects nav entry', () => {
-    expect(PARTNER_NAVIGATION.some((n) => n.to === '/partner/projects')).toBe(true)
+  it('hides Projects from nav (PRD s.23)', () => {
+    expect(PARTNER_NAVIGATION.some((n) => n.to === '/partner/projects')).toBe(false)
   })
 })
