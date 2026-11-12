@@ -34,11 +34,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input, Label } from '@/components/ui/input'
 import { ROUTES } from '@/config/routes'
-import { ChartPanel, PendingBackend, QueryBody, RecentCard, type Q } from '../components/widgets'
+import { ChartPanel, QueryBody, RecentCard, type Q } from '../components/widgets'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { ROW_CAP } from '../services/dashboardService'
 import {
+  APPROVED,
   countStatus,
+  countStatuses,
+  IN_REVIEW,
+  onboardingActivity,
+  recentDecisions,
   dailyCounts,
   dayEnd,
   dayStart,
@@ -77,11 +82,10 @@ function Stat({
 }: {
   label: string
   icon: LucideIcon
-  q?: Q
+  q: Q
   value?: number
   hint?: string
 }) {
-  if (!q) return <StatCard label={label} icon={icon} value="Pending backend" hint={hint} />
   if (!q.isEnabled)
     return <StatCard label={label} icon={icon} value="—" hint="Not available for your role" />
   return (
@@ -142,10 +146,16 @@ export default function DashboardPage() {
   const submitted = countStatus(apps, 'submitted')
   const onboarding = countStatus(apps, 'pilot_onboarding')
   const followUps = upcomingFollowUps(enquiries)
+  const decisions = recentDecisions(apps)
+  const activity = useMemo(
+    () => onboardingActivity(d.onboarding.data?.rows ?? []),
+    [d.onboarding.data],
+  )
   const truncated = [
     d.enquiries.data?.partial && 'enquiries',
     d.applications.data?.partial && 'applications',
     d.organizations.data?.partial && 'partners',
+    d.onboarding.data?.partial && 'onboarding',
   ].filter(Boolean)
 
   return (
@@ -190,8 +200,8 @@ export default function DashboardPage() {
       </div>
       {truncated.length > 0 && (
         <p role="note" className="mb-4 text-xs text-muted">
-          Counts for {truncated.join(', ')} are incomplete: only the first {ROW_CAP} records were loaded (safety
-          limit), so counts and charts for these lists may be understated.
+          Counts for {truncated.join(', ')} are incomplete: only the first {ROW_CAP} records were
+          loaded (safety limit), so counts and charts for these lists may be understated.
         </p>
       )}
 
@@ -203,11 +213,19 @@ export default function DashboardPage() {
           value={apps.length}
           hint="Submitted for review"
         />
-        <Stat label="Pending applications" icon={Clock} hint="No 'pending' status in API" />
+        <Stat
+          label="Pending applications"
+          icon={Clock}
+          q={d.applications}
+          value={countStatuses(apps, IN_REVIEW)}
+          hint="Submitted or in review"
+        />
         <Stat
           label="Approved applications"
           icon={CheckCircle2}
-          hint="No 'approved' status in API"
+          q={d.applications}
+          value={countStatuses(apps, APPROVED)}
+          hint="Pilot onboarding + scale-up"
         />
         <Stat
           label="Rejected applications"
@@ -409,14 +427,58 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </RecentCard>
-        <PendingBackend
+        <RecentCard
           title="Recent application decisions"
-          reason="The applications list returns no decision timestamp or decision history; the per-application history endpoints are not suitable for a dashboard feed."
-        />
-        <PendingBackend
+          q={d.applications}
+          empty={!decisions.length}
+          to={`${A}/application-reviews`}
+        >
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <Th>Reference</Th>
+                <Th>Organization</Th>
+                <Th>Decided</Th>
+                <Th>Outcome</Th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {decisions.map((a) => (
+                <tr key={a.id}>
+                  <td className="px-5 py-3 font-medium">{a.reference}</td>
+                  <td className="px-5 py-3">{a.organization_name ?? '—'}</td>
+                  <td className="whitespace-nowrap px-5 py-3 text-muted">
+                    {fmtDate(a.decided_at ?? null)}
+                  </td>
+                  <td className="px-5 py-3">
+                    <StatusBadge
+                      label={STATUS_LABEL[a.status] ?? a.status}
+                      tone={a.status === 'rejected' ? 'danger' : 'info'}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </RecentCard>
+        <RecentCard
           title="Recent onboarding activities"
-          reason="No onboarding activity feed or onboarding-task endpoint exists in the backend API."
-        />
+          q={d.onboarding}
+          empty={!activity.length}
+          to={`${A}/onboarding`}
+        >
+          <ul className="divide-y divide-line text-sm">
+            {activity.map((e) => (
+              <li key={e.key} className="flex items-center justify-between gap-3 px-5 py-3">
+                <span>
+                  {e.text}
+                  <span className="block text-xs text-muted">{e.org}</span>
+                </span>
+                <span className="whitespace-nowrap text-xs text-muted">{fmtDate(e.at)}</span>
+              </li>
+            ))}
+          </ul>
+        </RecentCard>
       </div>
 
       <Card>
@@ -447,12 +509,12 @@ export default function DashboardPage() {
               count={onboarding}
               to={`${A}/onboarding`}
             />
-            <li className="flex items-center justify-between px-5 py-3">
-              <span>Documents awaiting verification</span>
-              <span className="text-xs text-muted">
-                Pending backend support (no cross-application documents endpoint)
-              </span>
-            </li>
+            <ActionRow
+              label="Documents awaiting verification"
+              q={d.pendingDocs}
+              count={d.pendingDocs.data}
+              to={`${A}/documents`}
+            />
           </ul>
         </CardContent>
       </Card>
@@ -469,7 +531,7 @@ function ActionRow({
 }: {
   label: string
   q: Q
-  count: number
+  count: number | undefined
   to: string
   extra?: string | false
 }) {
@@ -491,7 +553,7 @@ function ActionRow({
         <span className="text-xs text-rose">Failed to load</span>
       ) : (
         <Link to={to} className="font-heading font-semibold text-coral-ink underline">
-          {count}
+          {count ?? '—'}
         </Link>
       )}
     </li>

@@ -1,7 +1,15 @@
 import { endpoints } from '@/config/endpoints'
 import { fetchAll, MAX_PAGES, type Fetched } from '@/features/reports/utils/aggregate'
 import { api } from '@/services/api/client'
-import type { ApiDict, ApiList, DateRange, EnquiryRow, OrgRow, ReviewerApplication } from '../types'
+import type {
+  ApiDict,
+  ApiList,
+  DateRange,
+  EnquiryRow,
+  OnboardingRecord,
+  OrgRow,
+  ReviewerApplication,
+} from '../types'
 
 const e = endpoints.dashboard
 const dates = (r: DateRange) => ({ created_from: r.from, created_to: r.to })
@@ -25,4 +33,13 @@ export const dashboardService = {
   enquiries: (r: DateRange) => all<EnquiryRow>(e.enquiries, dates(r)),
   activeOrganizations: () => all<OrgRow>(e.organizations, { status: 'active' }),
   applications: () => all<ReviewerApplication>(e.applications, {}),
+  onboarding: () => all<OnboardingRecord>(e.onboarding, {}),
+  /** Exact backend total of partner documents whose current version awaits review (one-row page). */
+  pendingDocuments: async () => {
+    const { data } = await api.get<ApiList<unknown>>(e.documents, {
+      params: { review_status: 'pending', page: 1, page_size: 1 },
+    })
+    const t = data.meta?.total ?? data.meta?.total_count
+    return typeof t === 'number' ? t : undefined
+  },
 }

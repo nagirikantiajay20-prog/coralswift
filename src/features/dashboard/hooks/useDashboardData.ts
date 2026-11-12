@@ -16,6 +16,7 @@ export function useDashboardData(range: DateRange) {
     applications: can('applicationReviews'),
     partners: can('partners'),
     reports: can('reports'),
+    documents: can('documents'),
   }
   const enquiries = useQuery({
     queryKey: ['dash', 'enquiries', range],
@@ -51,13 +52,27 @@ export function useDashboardData(range: DateRange) {
     enabled: access.reports,
     ...o,
   })
-  const all = [enquiries, applications, organizations, overview, kpis]
+  const onboarding = useQuery({
+    queryKey: ['dash', 'onboarding'],
+    queryFn: dashboardService.onboarding,
+    enabled: access.applications,
+    ...o,
+  })
+  const pendingDocs = useQuery({
+    queryKey: ['dash', 'pending-docs'],
+    queryFn: dashboardService.pendingDocuments,
+    enabled: access.documents,
+    ...o,
+  })
+  const all = [enquiries, applications, organizations, overview, kpis, onboarding, pendingDocs]
   return {
     enquiries,
     applications,
     organizations,
     overview,
     kpis,
+    onboarding,
+    pendingDocs,
     access,
     refreshing: all.some((q) => q.isFetching),
     refetchAll: () => all.forEach((q) => void (q.isEnabled && q.refetch())),

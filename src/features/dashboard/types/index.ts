@@ -54,6 +54,18 @@ export interface ReviewerApplication {
   assigned_reviewer_id: string | null
   submission_count: number
   submitted_at: string | null
+  /** Set when the application reached a decision (rejected, pilot_onboarding, scale_up). */
+  decided_at?: string | null
+}
+/** Slice of StaffOnboardingOut (GET /reviewer/onboarding). */
+export interface OnboardingRecord {
+  id: string
+  reference: string
+  organization_name: string
+  started_at: string
+  completed_at: string | null
+  first_login_at: string | null
+  tasks: { id: string; name: string; status: string; completed_at: string | null }[]
 }
 export interface DateRange {
   from?: string // ISO date-time

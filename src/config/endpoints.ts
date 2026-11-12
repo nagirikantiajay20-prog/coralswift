@@ -31,6 +31,8 @@ export const endpoints = {
     enquiries: '/api/v1/admin/enquiries', // EnquiryRow[]; page_size<=100, created_from/to
     organizations: '/api/v1/admin/organizations', // OrgRow[]; status=active|suspended
     applications: '/api/v1/reviewer/applications', // ReviewerApplicationOut[]; status=PortalStatus
+    onboarding: '/api/v1/reviewer/onboarding', // StaffOnboardingOut[] (verified live 2026-11-12)
+    documents: '/api/v1/admin/documents', // DocumentQueueRow[]; review_status=pending, meta.total
   },
 } as const
 

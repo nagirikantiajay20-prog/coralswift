@@ -1,4 +1,4 @@
-import type { EnquiryRow, PortalStatus, ReviewerApplication } from '../types'
+import type { EnquiryRow, OnboardingRecord, PortalStatus, ReviewerApplication } from '../types'
 
 export const STATUS_LABEL: Record<PortalStatus, string> = {
   draft: 'Draft',
@@ -21,6 +21,62 @@ export const PIPELINE: PortalStatus[] = [
   'pilot_onboarding',
   'scale_up',
 ]
+
+/** Applications still moving through review (the backend has no `pending` status). */
+export const IN_REVIEW: PortalStatus[] = [
+  'submitted',
+  'eligibility_verification',
+  'capability_review',
+  'commercial_legal_review',
+  'information_requested',
+]
+/** Accepted applications: the backend's decision is a move to pilot onboarding / scale-up (no `approved` status). */
+export const APPROVED: PortalStatus[] = ['pilot_onboarding', 'scale_up']
+export const DECIDED: PortalStatus[] = [...APPROVED, 'rejected']
+
+export const countStatuses = (apps: ReviewerApplication[], s: PortalStatus[]) =>
+  apps.filter((a) => s.includes(a.status)).length
+
+/** Newest decisions first; only applications carrying a decision timestamp. */
+export const recentDecisions = (apps: ReviewerApplication[], n = 5) =>
+  newest(
+    apps.filter((a) => DECIDED.includes(a.status) && a.decided_at),
+    (a) => a.decided_at ?? null,
+    n,
+  )
+
+export interface OnboardingEvent {
+  key: string
+  at: string
+  text: string
+  org: string
+}
+/** Newest onboarding events across all records: started, task completed, first login, closed. */
+export function onboardingActivity(rows: OnboardingRecord[], n = 5): OnboardingEvent[] {
+  const ev: OnboardingEvent[] = []
+  for (const r of rows) {
+    const org = r.organization_name
+    ev.push({ key: `${r.id}:s`, at: r.started_at, text: `Onboarding ${r.reference} started`, org })
+    if (r.first_login_at)
+      ev.push({ key: `${r.id}:l`, at: r.first_login_at, text: 'Partner first login', org })
+    if (r.completed_at)
+      ev.push({
+        key: `${r.id}:c`,
+        at: r.completed_at,
+        text: `Onboarding ${r.reference} completed`,
+        org,
+      })
+    for (const t of r.tasks)
+      if (t.completed_at)
+        ev.push({
+          key: `${r.id}:${t.id}`,
+          at: t.completed_at,
+          text: `Task completed: ${t.name}`,
+          org,
+        })
+  }
+  return newest(ev, (e) => e.at, n)
+}
 
 export function countBy<T>(rows: T[], key: (r: T) => string) {
   const m = new Map<string, number>()

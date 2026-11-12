@@ -34,19 +34,6 @@ export function QueryBody({ q, empty, children }: { q: Q; empty?: boolean; child
   return <>{children}</>
 }
 
-export function PendingBackend({ title, reason }: { title: string; reason: string }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <EmptyState title="Pending backend support" description={reason} />
-      </CardContent>
-    </Card>
-  )
-}
-
 export function ChartPanel({
   title,
   description,
