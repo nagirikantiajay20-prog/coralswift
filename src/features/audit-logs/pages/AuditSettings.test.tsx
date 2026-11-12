@@ -49,7 +49,7 @@ describe('audit utils', () => {
     expect(m.nested.fine).toBe(1)
   })
   it('withholds strategic events without strategic access', () => {
-    const r = row({ record_type: 'strategic_enquiry', action: 'viewed' })
+    const r = row({ record_type: 'strategic_enquiry', action: 'viewed', is_strategic: true })
     const hidden = toEntry(r, false)
     expect(hidden.restricted).toBe(true)
     expect(hidden.recordId).toBe('')

@@ -57,7 +57,7 @@ describe('delivery mapping', () => {
     expect(toDelivery({ id: 'x', status: 'delivered' }, true)?.status).toBeNull()
   })
   it('redacts strategic rows without strategic access, shows them with it', () => {
-    const s = { ...row, type: 'strategic_enquiry_ack', subject: 'Acquisition of X' }
+    const s = { ...row, type: 'strategic_enquiry_ack', subject: 'Acquisition of X', is_strategic: true }
     expect(toDelivery(s, false)).toMatchObject({ restricted: true, subject: null, recipient: null })
     expect(toDelivery(s, true)).toMatchObject({ restricted: false, subject: 'Acquisition of X' })
   })
@@ -111,7 +111,7 @@ describe('pages', () => {
         {
           ...row,
           id: 'ffffffff-2',
-          type: 'strategic_ack',
+          type: 'strategic_ack', is_strategic: true,
           subject: 'Merger plan',
           last_error: 'leak',
         },

@@ -3,12 +3,14 @@ import {
   createBrowserRouter,
   Navigate,
   Outlet,
+  useLocation,
   RouterProvider,
   type RouteObject,
 } from 'react-router-dom'
 import { LoadingState } from '@/components/common/states'
 import type { ModuleKey } from '@/config/permissions'
 import { ROUTES } from '@/config/routes'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { HomeRedirect, ModuleRoute, ProtectedRoute } from '@/features/auth/components/guards'
 import ChangePasswordPage from '@/features/auth/pages/ChangePasswordPage'
 import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage'
@@ -87,6 +89,7 @@ const Website = lazy(() => import('@/features/content-management/pages/WebsiteDa
 const WebsitePages = lazy(() => import('@/features/content-management/pages/WebsitePagesPage'))
 const ContentEditor = lazy(() => import('@/features/content-management/pages/ContentEditorPage'))
 const Claims = lazy(() => import('@/features/content-management/pages/ClaimsPage'))
+const Media = lazy(() => import('@/features/content-management/pages/MediaPage'))
 const CmsUnavailable = lazy(() => import('@/features/content-management/pages/UnavailablePages'))
 const Users = lazy(() => import('@/features/user-management/pages/UsersPage'))
 const UserDetail = lazy(() => import('@/features/user-management/pages/UserDetailPage'))
@@ -126,7 +129,7 @@ const contentRoutes: RouteObject[] = [
   { path: 'website/homepage', element: <CmsUnavailable kind="homepage" /> },
   { path: 'website/services', element: <CmsUnavailable kind="services" /> },
   { path: 'website/industries', element: <CmsUnavailable kind="industries" /> },
-  { path: 'website/media', element: <CmsUnavailable kind="media" /> },
+  { path: 'website/media', element: <Media /> },
   // Phase 1 paths kept as redirects
   ...(['pages', 'articles', 'categories', 'media', 'approval'] as const).map((s) => ({
     path: `content/${s}`,
@@ -136,8 +139,22 @@ const contentRoutes: RouteObject[] = [
   })),
 ]
 
+function SearchRedirect({ to }: { to: string }) {
+  return <Navigate to={`${to}${useLocation().search}`} replace />
+}
+
+function ApplicationsLink() {
+  const { search } = useLocation()
+  const { home } = useAuth()
+  return <Navigate to={home === ROUTES.dashboard ? `/admin/applications${search}` : home} replace />
+}
+
 export const router = createBrowserRouter([
   { path: '/', element: <HomeRedirect /> },
+  // Backend notification links are /applications?reference=<ref>: staff land on the filtered list, partners on their application.
+  { path: '/applications', element: <ApplicationsLink /> },
+  // Backend invitation emails link to /activate?token= (the page itself lives under /partner).
+  { path: '/activate', element: <SearchRedirect to="/partner/activate" /> },
   {
     element: <AuthLayout />,
     children: [

@@ -147,6 +147,12 @@ export const contentEndpoints = {
   claim: (id: string) => `/api/v1/admin/content-claims/${id}`, // PATCH ClaimUpdate
   publicList: '/api/v1/content', // public: published only
 } as const
+/** Media library (png/jpg, 10 MiB; private until published). Preview files need the bearer token. */
+export const mediaEndpoints = {
+  list: '/api/v1/admin/media', // GET published, archived, q, page, page_size / POST multipart file, alt_text
+  file: (id: string) => `/api/v1/admin/media/${id}/file`,
+  action: (id: string, a: 'publish' | 'unpublish' | 'archive') => `/api/v1/admin/media/${id}/${a}`,
+} as const
 export type ContentAction =
   | 'submit' // draft -> in_review
   | 'approve' // in_review -> approved (super administrator) body { note? }

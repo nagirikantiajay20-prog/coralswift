@@ -1,6 +1,6 @@
 import { RefreshCw } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { FilterDropdown } from '@/components/common/FilterDropdown'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -25,7 +25,8 @@ export default function ApplicationsPage() {
   const { user } = useAuth()
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState<StatusFilter>('all')
-  const [search, setSearch] = useState('')
+  const [params] = useSearchParams()
+  const [search, setSearch] = useState(params.get('reference') ?? '')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [sort, setSort] = useState<Sort>('newest')

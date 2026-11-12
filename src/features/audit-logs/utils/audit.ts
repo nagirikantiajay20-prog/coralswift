@@ -2,7 +2,6 @@ import type { AuditEntry, AuditRowRaw } from '../types'
 
 const SECRET_KEY =
   /pass(word|wd)?|secret|token|api[_-]?key|authorization|credential|otp|totp|recovery|ssn|card|cvv|private|signature/i
-const STRATEGIC = /strategic|m&a|merger|acquisition/i
 export const REDACTED = '[redacted]'
 
 /** Recursively masks values stored under secret-looking keys. Depth-limited; never throws. */
@@ -20,19 +19,8 @@ export function redact(value: unknown, depth = 0): unknown {
   return value
 }
 
-/** Backend marks no audit row as strategic: this is a heuristic, backend access control stays authoritative. */
-export const looksStrategic = (r: Pick<AuditRowRaw, 'record_type' | 'action' | 'meta'>) => {
-  let m = ''
-  try {
-    m = JSON.stringify(r.meta ?? {})
-  } catch {
-    /* unserialisable meta: ignore */
-  }
-  return STRATEGIC.test(`${r.record_type} ${r.action} ${m}`)
-}
-
 export function toEntry(r: AuditRowRaw, canSeeStrategic: boolean): AuditEntry {
-  const restricted = !canSeeStrategic && (r.is_strategic === true || looksStrategic(r))
+  const restricted = !canSeeStrategic && r.is_strategic === true
   return {
     id: r.id,
     at: r.created_at,

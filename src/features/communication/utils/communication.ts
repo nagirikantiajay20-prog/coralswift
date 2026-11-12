@@ -38,11 +38,10 @@ const text = (r: OutboxRow, keys: string[]): string | null => {
   for (const k of keys) if (typeof r[k] === 'string' && r[k]) return r[k] as string
   return null
 }
-const STRATEGIC = /strategic|m&a|merger|acquisition/i
 
 /**
  * Whitelist mapping: only these fields are ever read. Message bodies, payloads and any other key
- * are dropped. Rows that look strategic are redacted unless `canSeeStrategic`.
+ * are dropped. Rows flagged is_strategic are redacted unless `canSeeStrategic`.
  */
 export function toDelivery(r: OutboxRow, canSeeStrategic: boolean): Delivery | null {
   if (typeof r.id !== 'string') return null
@@ -57,7 +56,7 @@ export function toDelivery(r: OutboxRow, canSeeStrategic: boolean): Delivery | n
     failure: text(r, ['last_error', 'error', 'failure_reason']),
     restricted: false,
   }
-  if (!canSeeStrategic && STRATEGIC.test(`${d.type ?? ''} ${d.subject ?? ''}`)) {
+  if (!canSeeStrategic && r.is_strategic === true) {
     return { ...d, subject: null, recipient: null, failure: null, restricted: true }
   }
   return d
